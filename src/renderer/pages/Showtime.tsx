@@ -23,12 +23,13 @@ import {
   VStack
 } from '@chakra-ui/react';
 import FilePicker from 'chakra-ui-file-picker';
-import { XMLParser } from 'fast-xml-parser';
-import { useEffect, useState } from 'react';
-import { FaGear } from 'react-icons/fa6';
-import { Page } from '../common/Page';
-import { decodeName } from '../utils/DecodeName';
-import { AudioPlayer } from './AudioPlayerHowl';
+import {XMLParser} from 'fast-xml-parser';
+import {useContext, useEffect, useState} from 'react';
+import {FaGear} from 'react-icons/fa6';
+import {Page} from '../common/Page';
+import {UserSettingsContext} from '../providers/UserSettingsProvider';
+import {decodeName} from '../utils/DecodeName';
+import {AudioPlayer} from './AudioPlayerHowl';
 
 export type Track = {
   location: string
@@ -36,15 +37,16 @@ export type Track = {
 }
 
 export const Showtime = () => {
+  const [userSettings] = useContext(UserSettingsContext);
   const [file, setFile] = useState<File>();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [trackIndex, setTrackIndex] = useState<number>(0);
-  const [isWindows, setIsWindows] = useState<boolean>(false);
   const [overrideWindowsDrive, setOverrideWindowsDrive] = useState<boolean>(false);
   const [autoPlay, setAutoPlay] = useState<boolean>(false);
   const [windowsDrive, setWindowsDrive] = useState<string>('C');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const parser = new XMLParser();
+  const isWindows = userSettings.isWindows;
 
   const handleSettingsOpen = () => {
     // blur settings button
@@ -57,20 +59,25 @@ export const Showtime = () => {
       setTracks([]);
       setTrackIndex(0);
     } else {
-      setFile(files[0]);
-      const playlistXml = await files[0].text();
-      const parsedPlaylist = parser.parse(playlistXml);
-      const tracks: Track[] = parsedPlaylist.playlist.trackList.track.map((track: any) => ({
-        location: track.location.replace('file:', 'showtime:'),
-        name: decodeName(track.location.split('/').slice(-1)[0].slice(0, -4))
-      }));
-      setTracks(tracks);
-      // setTimeout(focusOnAudioPlayer, 1000);
+      try {
+        setFile(files[0]);
+        const playlistXml = await files[0].text();
+        const parsedPlaylist = parser.parse(playlistXml);
+        const tracks: Track[] = parsedPlaylist.playlist.trackList.track.map((track: { location: string }) => ({
+          location: track.location.replace('file:', 'showtime:'),
+          name: decodeName(track.location.split('/').slice(-1)[0].slice(0, -4))
+        }));
+        setTracks(tracks);
+      } catch (error) {
+        setTracks([]);
+        setTrackIndex(0);
+        alert('Failed to parse playlist file: ' + String(error));
+      }
     }
   };
 
   const remapTrackLocations = () => {
-    const newTracks = tracks.map((track: any) => ({
+    const newTracks = tracks.map((track: Track) => ({
       location: overrideWindowsDrive ? track.location.replace(/showtime:\/\/\/(.:)/, `showtime:///${windowsDrive}:`) : track.location,
       name: track.name
     }));
@@ -108,17 +115,7 @@ export const Showtime = () => {
     }
   };
 
-  useEffect(() => {
-    window.electron.ipcRenderer.once('getPlatform', (platform: any) => {
-      if (platform === 'win32') {
-        setIsWindows(true);
-      }
-    });
-
-    window.electron.ipcRenderer.sendMessage('getPlatform');
-  }, []);
-
-  const onDriveChange = (e: any) => {
+  const onDriveChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setWindowsDrive(e.target.value);
   };
 
@@ -126,8 +123,7 @@ export const Showtime = () => {
     remapTrackLocations();
   }, [windowsDrive]);
 
-  // common windows drive letters A through E
-  const driveLetters: string[] = Array.from({ length: 5 }, (_, i) => String.fromCharCode('A'.charCodeAt(0) + i));
+  const driveLetters: string[] = Array.from({ length: 26 }, (_, i) => String.fromCharCode('A'.charCodeAt(0) + i));
 
   return (
     <Page name={'Showtime'}>

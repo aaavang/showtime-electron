@@ -1,17 +1,13 @@
-import { ArrowDownIcon, ArrowUpIcon, ChevronDownIcon, MenuButton } from '@chakra-ui/icons';
+import {ChevronDownIcon, MenuButton} from '@chakra-ui/icons';
 import {
   Button,
-  Center, Checkbox,
-  Divider,
+  Checkbox,
   Flex,
   HStack,
-  IconButton,
-  Input,
   Menu,
   MenuGroup,
   MenuItem,
   MenuList,
-  Select,
   Table,
   TableContainer,
   Tbody,
@@ -22,26 +18,20 @@ import {
   Tr,
   useToast
 } from '@chakra-ui/react';
-import {
-  createColumnHelper,
-  flexRender,
-  getCoreRowModel,
-  getPaginationRowModel,
-  useReactTable
-} from '@tanstack/react-table';
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { MdCleaningServices, MdFileOpen, MdOutbound, MdSave } from 'react-icons/md';
+import {createColumnHelper, flexRender, getCoreRowModel, useReactTable} from '@tanstack/react-table';
+import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
+import {MdCleaningServices, MdFileOpen, MdOutbound, MdSave} from 'react-icons/md';
 import * as builder from 'xmlbuilder';
-import { Page } from '../common/Page';
-import { database, Playlist } from '../database';
-import { useSavePlaylistModal } from '../hooks/SavePlaylistModal';
-import { HydratedDanceVariant, useSelectDanceModal } from '../hooks/SelectDanceModal';
-import { useSelectPlaylistModal } from '../hooks/SelectPlaylistModal';
-import { JukeboxState } from '../hooks/useJukebox';
-import { useSongPathEncoder } from '../hooks/useSongPathEncoder';
-import { JukeboxContext } from '../providers/JukeboxProvider';
-import { UserSettingsContext, useUserSettings } from '../providers/UserSettingsProvider';
-import { useClickAway, useKeyPressEvent } from 'react-use';
+import {Page} from '../common/Page';
+import {database, Playlist} from '../database';
+import {useSavePlaylistModal} from '../hooks/SavePlaylistModal';
+import {HydratedDanceVariant, useSelectDanceModal} from '../hooks/SelectDanceModal';
+import {useSelectPlaylistModal} from '../hooks/SelectPlaylistModal';
+import {JukeboxState} from '../hooks/useJukebox';
+import {useSongPathEncoder} from '../hooks/useSongPathEncoder';
+import {JukeboxContext} from '../providers/JukeboxProvider';
+import {UserSettingsContext} from '../providers/UserSettingsProvider';
+import {useClickAway, useKeyPressEvent} from 'react-use';
 
 export const PracticeTime = () => {
   const toast = useToast();

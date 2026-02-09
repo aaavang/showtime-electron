@@ -1,13 +1,16 @@
-import { ChevronDownIcon, MenuButton, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
+import {ChevronDownIcon, MenuButton, TriangleDownIcon, TriangleUpIcon} from '@chakra-ui/icons';
 import {
   Box,
-  Button, Center,
-  chakra, Divider,
-  HStack, Input, Menu, MenuItem, MenuList, Select,
+  Button,
+  Center,
+  chakra,
+  HStack,
+  Menu,
+  MenuItem,
+  MenuList,
   Table,
-  TableContainer,
   Tbody,
-  Td, Text,
+  Td,
   Th,
   Thead,
   Tr,
@@ -25,16 +28,17 @@ import {
   SortingState,
   useReactTable
 } from '@tanstack/react-table';
-import { useLiveQuery } from 'dexie-react-hooks';
-import React, { useCallback, useContext, useMemo, useState } from 'react';
-import { MdAppRegistration, MdDelete } from 'react-icons/md';
-import { useNavigate } from 'react-router-dom';
-import { Filter } from '../common/Filter';
-import { Page } from '../common/Page';
-import { Dance, DanceVariant, database } from '../database';
-import { useDanceModal } from '../hooks/DanceModal';
-import { JukeboxContext } from '../providers/JukeboxProvider';
-import { confirmAction } from '../utils/ConfirmAction';
+import {useLiveQuery} from 'dexie-react-hooks';
+import React, {useCallback, useContext, useMemo, useState} from 'react';
+import {MdAppRegistration, MdDelete} from 'react-icons/md';
+import {useNavigate} from 'react-router-dom';
+import {DebouncedInput} from '../common/Filter';
+import {Page} from '../common/Page';
+import {TableControls} from '../common/TableControls';
+import {Dance, DanceVariant, database} from '../database';
+import {useDanceModal} from '../hooks/DanceModal';
+import {JukeboxContext} from '../providers/JukeboxProvider';
+import {confirmAction} from '../utils/ConfirmAction';
 
 type NewDance = Dance & { songId: number }
 
@@ -170,17 +174,29 @@ export const Dances = () => {
       duration: 2000,
       isClosable: true
     });
-  }, []);
+  }, [dances, toast]);
 
   return (
     <Page name={'Dances'}>
-      <VStack justifyContent={'space-between'} height={'100%'}>
-        <TableContainer width={'100%'}>
-          <HStack>
+      <VStack height={'100%'} spacing={0}>
+        <HStack w={'100%'} flexShrink={0} pb={2}>
+          <Box flex={1}>
             <Button colorScheme={'green'} onClick={newDanceModal.onOpen}>+ New Dance</Button>
-          </HStack>
-          <Table variant="simple">
-            <Thead>
+          </Box>
+          <Center flex={1}>
+            <DebouncedInput
+              value={(table.getColumn('title')?.getFilterValue() ?? '') as string}
+              onChange={value => table.getColumn('title')?.setFilterValue(value)}
+              placeholder="Search..."
+              w={'300px'}
+              textAlign={'center'}
+            />
+          </Center>
+          <Box flex={1} />
+        </HStack>
+        <Box flex={1} overflowY={'auto'} width={'100%'}>
+          <Table variant="simple" width={'100%'}>
+            <Thead position={'sticky'} top={0} zIndex={1} bg={'chakra-body-bg'}>
               {table.getHeaderGroups().map((headerGroup) => (
                 <Tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
@@ -191,29 +207,22 @@ export const Dances = () => {
                         onClick={header.column.getToggleSortingHandler()}
                         isNumeric={meta?.isNumeric}
                       >
-                        <VStack alignItems={'flex-start'}>
-                          <Box>
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-
-                            <chakra.span pl="4">
-                              {header.column.getIsSorted() ? (
-                                header.column.getIsSorted() === 'desc' ? (
-                                  <TriangleDownIcon aria-label="sorted descending" />
-                                ) : (
-                                  <TriangleUpIcon aria-label="sorted ascending" />
-                                )
-                              ) : null}
-                            </chakra.span>
-                          </Box>
-                          {header.column.getCanFilter() && (
-                            <div>
-                              <Filter column={header.column} />
-                            </div>
+                        <Box>
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
                           )}
-                        </VStack>
+
+                          <chakra.span pl="4">
+                            {header.column.getIsSorted() ? (
+                              header.column.getIsSorted() === 'desc' ? (
+                                <TriangleDownIcon aria-label="sorted descending" />
+                              ) : (
+                                <TriangleUpIcon aria-label="sorted ascending" />
+                              )
+                            ) : null}
+                          </chakra.span>
+                        </Box>
                       </Th>
                     );
                   })}
@@ -235,69 +244,8 @@ export const Dances = () => {
               ))}
             </Tbody>
           </Table>
-          <HStack gap={'15px'} justifyContent={'center'}>
-            <Button
-              onClick={() => table.setPageIndex(0)}
-              isDisabled={!table.getCanPreviousPage()}
-            >
-              {'<<'}
-            </Button>
-            <Button
-              onClick={() => table.previousPage()}
-              isDisabled={!table.getCanPreviousPage()}
-            >
-              {'<'}
-            </Button>
-            <Button
-              onClick={() => table.nextPage()}
-              isDisabled={!table.getCanNextPage()}
-            >
-              {'>'}
-            </Button>
-            <Button
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              isDisabled={!table.getCanNextPage()}
-            >
-              {'>>'}
-            </Button>
-            <Center gap={'5px'}>
-              <Text>Page</Text>
-              <strong>
-                {table.getState().pagination.pageIndex + 1} of{' '}
-                {table.getPageCount()}
-              </strong>
-            </Center>
-            <Center height="20px">
-              <Divider orientation="vertical" />
-            </Center>
-            <Center gap={'5px'}>
-              Go to page:
-              <Input
-                width={'100px'}
-                type="number"
-                defaultValue={table.getState().pagination.pageIndex + 1}
-                onChange={e => {
-                  const page = e.target.value ? Number(e.target.value) - 1 : 0;
-                  if (page >= 0 && page < table.getPageCount())
-                    table.setPageIndex(page);
-                }}
-              />
-            </Center>
-            <Select
-              width={'150px'}
-              value={table.getState().pagination.pageSize}
-              onChange={e => {
-                table.setPageSize(Number(e.target.value));
-              }}
-            >
-              {[10, 20, 30, 40, 50].map(pageSize => (
-                <option key={pageSize} value={pageSize}>
-                  Show {pageSize}
-                </option>
-              ))}
-            </Select>
-          </HStack>
-        </TableContainer>
+        </Box>
+        <TableControls table={table} />
       </VStack>
       <DanceModal onSubmit={saveDance} />
     </Page>

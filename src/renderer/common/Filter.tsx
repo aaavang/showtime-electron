@@ -1,6 +1,6 @@
-import { Input, InputProps } from '@chakra-ui/react';
-import { Column } from '@tanstack/react-table';
-import { useEffect, useState } from 'react';
+import {Input, InputProps} from '@chakra-ui/react';
+import {Column} from '@tanstack/react-table';
+import {useEffect, useState} from 'react';
 
 export function Filter({ column }: { column: Column<any, unknown> }) {
   const columnFilterValue = column.getFilterValue();

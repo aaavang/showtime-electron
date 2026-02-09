@@ -1,9 +1,8 @@
 /* eslint global-require: off, no-console: off, promise/always-return: off */
 
-import { app, BrowserWindow, ipcMain, net, protocol, shell } from 'electron';
+import {app, BrowserWindow, net, protocol, shell} from 'electron';
 import log from 'electron-log';
-import { autoUpdater } from 'electron-updater';
-import os from 'node:os';
+import {autoUpdater} from 'electron-updater';
 /**
  * This module executes inside of electron's main process. You can start
  * electron renderer process from here and communicate with the other processes
@@ -14,9 +13,8 @@ import os from 'node:os';
  */
 import path from 'path';
 import MenuBuilder from './menu';
-import { setupIPC } from './setupIPC';
-import { resolveHtmlPath } from './util';
-import { database } from '../renderer/database';
+import {setupIPC} from './setupIPC';
+import {resolveHtmlPath} from './util';
 
 class AppUpdater {
   constructor() {
@@ -35,29 +33,13 @@ if (process.env.NODE_ENV === 'production') {
   sourceMapSupport.install();
 }
 
-const isDebug = true;
+const isDebug = process.env.NODE_ENV === 'development' || !app.isPackaged;
 
 if (isDebug) {
   require('electron-debug')();
 }
 
-const installExtensions = async () => {
-  const installer = require('electron-devtools-installer');
-  const forceDownload = !!process.env.UPGRADE_EXTENSIONS;
-  const extensions = ['REACT_DEVELOPER_TOOLS'];
-
-  return installer
-    .default(
-      extensions.map((name) => installer[name]),
-      forceDownload,
-    )
-    .catch(console.log);
-};
-
 const createWindow = async () => {
-  if (isDebug) {
-    await installExtensions();
-  }
 
   const RESOURCES_PATH = app.isPackaged
     ? path.join(process.resourcesPath, 'assets')
@@ -74,6 +56,8 @@ const createWindow = async () => {
     icon: getAssetPath('icon.png'),
     webPreferences: {
       webSecurity: true,
+      contextIsolation: true,
+      nodeIntegration: false,
       preload: app.isPackaged
         ? path.join(__dirname, 'preload.js')
         : path.join(__dirname, '../../.erb/dll/preload.js'),

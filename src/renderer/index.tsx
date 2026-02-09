@@ -1,8 +1,8 @@
-import { ChakraProvider, ColorModeScript } from '@chakra-ui/react';
-import { createRoot } from 'react-dom/client';
+import {ChakraProvider, ColorModeScript} from '@chakra-ui/react';
+import {createRoot} from 'react-dom/client';
 import App from './App';
-import { JukeboxProvider } from './providers/JukeboxProvider';
-import { UserSettingsProvider } from './providers/UserSettingsProvider';
+import {JukeboxProvider} from './providers/JukeboxProvider';
+import {UserSettingsProvider} from './providers/UserSettingsProvider';
 import theme from './theme';
 
 const container = document.getElementById('root') as HTMLElement;

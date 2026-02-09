@@ -1,11 +1,11 @@
-import { CloseIcon } from '@chakra-ui/icons';
-import { Badge, Box, Button, Flex, Heading, HStack, IconButton, VStack } from '@chakra-ui/react';
-import React, { MutableRefObject, useCallback, useContext, useRef, useState } from 'react';
-import { Dance, DanceVariant, Song } from '../database';
-import { AudioPlayer } from '../pages/AudioPlayerHowl';
-import { UserSettingsContext } from '../providers/UserSettingsProvider';
-import { HydratedDanceVariant } from './SelectDanceModal';
-import { useSongPathEncoder } from './useSongPathEncoder';
+import {CloseIcon} from '@chakra-ui/icons';
+import {Badge, Box, Button, Flex, Heading, HStack, IconButton, VStack} from '@chakra-ui/react';
+import React, {MutableRefObject, useCallback, useContext, useRef, useState} from 'react';
+import {Dance, DanceVariant, Song} from '../database';
+import {AudioPlayer} from '../pages/AudioPlayerHowl';
+import {UserSettingsContext} from '../providers/UserSettingsProvider';
+import {HydratedDanceVariant} from './SelectDanceModal';
+import {useSongPathEncoder} from './useSongPathEncoder';
 
 export type JukeboxState = {
   showMode?: boolean;

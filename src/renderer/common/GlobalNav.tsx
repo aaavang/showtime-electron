@@ -1,6 +1,6 @@
-import { Box, Button, Link, Tab, TabList, Tabs, useColorMode } from '@chakra-ui/react';
+import {Box, Link, Tab, TabList, Tabs} from '@chakra-ui/react';
 import React from 'react';
-import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
+import {Link as ReactRouterLink, useLocation} from 'react-router-dom';
 
 export const GlobalNav = () => {
   const location = useLocation();

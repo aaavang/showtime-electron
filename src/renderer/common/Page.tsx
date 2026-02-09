@@ -1,15 +1,8 @@
-import { DrawerOverlay } from '@chakra-ui/icons';
-import {
-  Box,
-  Drawer,
-  DrawerBody,
-  DrawerContent,
-  Heading, useDisclosure,
-  VStack
-} from '@chakra-ui/react';
-import React, { useContext } from 'react';
-import { JukeboxContext } from '../providers/JukeboxProvider';
-import { GlobalNav } from './GlobalNav';
+import {DrawerOverlay} from '@chakra-ui/icons';
+import {Box, Drawer, DrawerBody, DrawerContent, Heading, useDisclosure, VStack} from '@chakra-ui/react';
+import React, {useContext} from 'react';
+import {JukeboxContext} from '../providers/JukeboxProvider';
+import {GlobalNav} from './GlobalNav';
 
 export type PageProps = {
   children: React.ReactNode
@@ -21,10 +14,10 @@ export const Page = ({ children, name}: PageProps) => {
   const jukeboxDisclosure = useDisclosure();
 
   return (
-    <VStack w={'100%'} marginTop={'25px'}>
+    <VStack w={'100%'} h={'100vh'} pt={'25px'} overflow={'hidden'}>
       <GlobalNav />
       <Heading as={'h1'}>{name}</Heading>
-      <Box flexGrow={1} height={'100%'} width={'100%'} padding={'25px'} id={'page-container'}>
+      <Box flexGrow={1} width={'100%'} padding={'25px'} overflow={'hidden'} id={'page-container'}>
         {children}
       </Box>
       <Drawer placement={'bottom'} onClose={jukeboxDisclosure.onClose} isOpen={jukebox.jukeboxState.showJukebox} initialFocusRef={jukebox.initialFocusRef}>
