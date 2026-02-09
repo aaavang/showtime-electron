@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 // Mocks must be declared before imports
+import { dialog, net } from 'electron';
+import fs from 'fs';
+import { setupIPC } from '../../main/setupIPC';
+
 const handlers: Record<string, (...args: any[]) => any> = {};
 
 jest.mock('electron', () => ({
@@ -33,10 +37,6 @@ jest.mock('fs', () => {
 jest.mock('node:os', () => ({
   platform: jest.fn(() => 'darwin'),
 }));
-
-import { setupIPC } from '../../main/setupIPC';
-import { dialog, net } from 'electron';
-import fs from 'fs';
 
 function makeEvent() {
   return { reply: jest.fn() } as any;
@@ -144,13 +144,11 @@ describe('getAudioFilesInDirectory', () => {
       // Every directory contains one subdir and one audio file
       return Promise.resolve(['sub', 'a.mp3']);
     });
-    (fs.promises.stat as jest.Mock).mockImplementation(
-      (filePath: string) => {
-        if (filePath.endsWith('.mp3'))
-          return Promise.resolve({ isDirectory: () => false });
-        return Promise.resolve({ isDirectory: () => true });
-      }
-    );
+    (fs.promises.stat as jest.Mock).mockImplementation((filePath: string) => {
+      if (filePath.endsWith('.mp3'))
+        return Promise.resolve({ isDirectory: () => false });
+      return Promise.resolve({ isDirectory: () => true });
+    });
 
     const event = makeEvent();
     await handlers.getAudioFilesInDirectory(event, undefined);

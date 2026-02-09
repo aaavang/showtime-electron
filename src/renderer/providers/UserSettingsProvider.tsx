@@ -1,12 +1,11 @@
-import {createContext, useEffect} from 'react';
-import {useLocalStorage} from 'react-use';
-
+import React, { createContext, useEffect, useMemo } from 'react';
+import { useLocalStorage } from 'react-use';
 
 export type UserSettings = {
-  enableFineGrainAutoplay: boolean
-  useHTML5Audio: boolean
-  isWindows: boolean
-}
+  enableFineGrainAutoplay: boolean;
+  useHTML5Audio: boolean;
+  isWindows: boolean;
+};
 
 const defaultUserSettings = {
   enableFineGrainAutoplay: false,
@@ -14,10 +13,20 @@ const defaultUserSettings = {
   isWindows: true,
 };
 
-export const UserSettingsContext = createContext([defaultUserSettings, (settings: UserSettings) => {}] as [UserSettings, (settings: UserSettings) => void]);
+export const UserSettingsContext = createContext([
+  defaultUserSettings,
+  (_settings: UserSettings) => {},
+] as [UserSettings, (settings: UserSettings) => void]);
 
-export const UserSettingsProvider = ({ children }: { children: React.ReactNode }) => {
-  const [userSettings, setUserSettings] = useLocalStorage("userSettings", defaultUserSettings);
+export function UserSettingsProvider({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const [userSettings, setUserSettings] = useLocalStorage(
+    'userSettings',
+    defaultUserSettings,
+  );
 
   useEffect(() => {
     window.electron.ipcRenderer.once('getPlatform', (...args: unknown[]) => {
@@ -25,12 +34,12 @@ export const UserSettingsProvider = ({ children }: { children: React.ReactNode }
       if (platform === 'win32') {
         setUserSettings({
           ...userSettings,
-          isWindows: true
+          isWindows: true,
         } as UserSettings);
       } else {
         setUserSettings({
           ...userSettings,
-          isWindows: false
+          isWindows: false,
         } as UserSettings);
       }
     });
@@ -38,5 +47,18 @@ export const UserSettingsProvider = ({ children }: { children: React.ReactNode }
     window.electron.ipcRenderer.sendMessage('getPlatform');
   }, []);
 
-  return <UserSettingsContext.Provider value={[userSettings!, setUserSettings] as [UserSettings, (settings: UserSettings) => void]}>{children}</UserSettingsContext.Provider>;
+  const contextValue = useMemo(
+    () =>
+      [userSettings!, setUserSettings] as [
+        UserSettings,
+        (settings: UserSettings) => void,
+      ],
+    [userSettings, setUserSettings],
+  );
+
+  return (
+    <UserSettingsContext.Provider value={contextValue}>
+      {children}
+    </UserSettingsContext.Provider>
+  );
 }

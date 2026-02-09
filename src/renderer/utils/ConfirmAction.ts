@@ -1,7 +1,7 @@
 export function confirmAction(
   message: string,
   onConfirm: () => void,
-  onAbort?: () => void
+  onAbort?: () => void,
 ) {
   return () => {
     if (window.confirm(message)) onConfirm();

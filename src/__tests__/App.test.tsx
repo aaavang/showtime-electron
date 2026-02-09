@@ -20,11 +20,26 @@ beforeAll(() => {
 // Mock database to avoid auto-open error in jsdom
 jest.mock('../renderer/database', () => ({
   database: {
-    songs: { toArray: jest.fn().mockResolvedValue([]), hook: jest.fn(() => jest.fn()) },
-    dances: { toArray: jest.fn().mockResolvedValue([]), hook: jest.fn(() => jest.fn()) },
-    danceVariants: { toArray: jest.fn().mockResolvedValue([]), hook: jest.fn(() => jest.fn()) },
-    playlists: { toArray: jest.fn().mockResolvedValue([]), hook: jest.fn(() => jest.fn()) },
-    playlistDances: { toArray: jest.fn().mockResolvedValue([]), hook: jest.fn(() => jest.fn()) },
+    songs: {
+      toArray: jest.fn().mockResolvedValue([]),
+      hook: jest.fn(() => jest.fn()),
+    },
+    dances: {
+      toArray: jest.fn().mockResolvedValue([]),
+      hook: jest.fn(() => jest.fn()),
+    },
+    danceVariants: {
+      toArray: jest.fn().mockResolvedValue([]),
+      hook: jest.fn(() => jest.fn()),
+    },
+    playlists: {
+      toArray: jest.fn().mockResolvedValue([]),
+      hook: jest.fn(() => jest.fn()),
+    },
+    playlistDances: {
+      toArray: jest.fn().mockResolvedValue([]),
+      hook: jest.fn(() => jest.fn()),
+    },
   },
 }));
 
@@ -51,9 +66,7 @@ describe('App', () => {
     expect(
       render(
         <ChakraProvider>
-          <UserSettingsContext.Provider
-            value={[mockUserSettings, jest.fn()]}
-          >
+          <UserSettingsContext.Provider value={[mockUserSettings, jest.fn()]}>
             <JukeboxContext.Provider value={mockJukeboxValue}>
               <App />
             </JukeboxContext.Provider>

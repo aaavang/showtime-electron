@@ -1,11 +1,11 @@
-import {useContext} from 'react';
-import {Song} from '../database';
-import {UserSettingsContext} from '../providers/UserSettingsProvider';
+import { useContext } from 'react';
+import { Song } from '../database';
+import { UserSettingsContext } from '../providers/UserSettingsProvider';
 
 export const useSongPathEncoder = () => {
   const [userSettings] = useContext(UserSettingsContext);
 
-  const windowsFilePathTShowtimeUri = (filePath: string)=> {
+  const windowsFilePathTShowtimeUri = (filePath: string) => {
     // Replace backslashes with forward slashes
     const pathWithForwardSlashes = filePath.replace(/\\/g, '/');
 
@@ -24,13 +24,12 @@ export const useSongPathEncoder = () => {
 
     // Construct the full file URL
     return `showtime:///${driveLetter}${encodedRestOfPath}`;
-  }
+  };
 
   return (song: Song) => {
     if (userSettings.isWindows) {
-      return windowsFilePathTShowtimeUri(song.path)
-    } else {
-      return encodeURI(`showtime://${song.path}`);
+      return windowsFilePathTShowtimeUri(song.path);
     }
-  }
-}
+    return encodeURI(`showtime://${song.path}`);
+  };
+};

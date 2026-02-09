@@ -20,33 +20,34 @@ import {
   Select,
   Text,
   useDisclosure,
-  VStack
+  VStack,
 } from '@chakra-ui/react';
 import FilePicker from 'chakra-ui-file-picker';
-import {XMLParser} from 'fast-xml-parser';
-import {useContext, useEffect, useState} from 'react';
-import {FaGear} from 'react-icons/fa6';
-import {Page} from '../common/Page';
-import {UserSettingsContext} from '../providers/UserSettingsProvider';
-import {decodeName} from '../utils/DecodeName';
-import {AudioPlayer} from './AudioPlayerHowl';
+import { XMLParser } from 'fast-xml-parser';
+import React, { useContext, useEffect, useState } from 'react';
+import { FaGear } from 'react-icons/fa6';
+import { Page } from '../common/Page';
+import { UserSettingsContext } from '../providers/UserSettingsProvider';
+import { decodeName } from '../utils/DecodeName';
+import { AudioPlayer } from './AudioPlayerHowl';
 
 export type Track = {
-  location: string
-  name: string
-}
+  location: string;
+  name: string;
+};
 
-export const Showtime = () => {
+export function Showtime() {
   const [userSettings] = useContext(UserSettingsContext);
   const [file, setFile] = useState<File>();
   const [tracks, setTracks] = useState<Track[]>([]);
   const [trackIndex, setTrackIndex] = useState<number>(0);
-  const [overrideWindowsDrive, setOverrideWindowsDrive] = useState<boolean>(false);
+  const [overrideWindowsDrive, setOverrideWindowsDrive] =
+    useState<boolean>(false);
   const [autoPlay, setAutoPlay] = useState<boolean>(false);
   const [windowsDrive, setWindowsDrive] = useState<string>('C');
   const { isOpen, onOpen, onClose } = useDisclosure();
   const parser = new XMLParser();
-  const isWindows = userSettings.isWindows;
+  const { isWindows } = userSettings;
 
   const handleSettingsOpen = () => {
     // blur settings button
@@ -63,23 +64,33 @@ export const Showtime = () => {
         setFile(files[0]);
         const playlistXml = await files[0].text();
         const parsedPlaylist = parser.parse(playlistXml);
-        const tracks: Track[] = parsedPlaylist.playlist.trackList.track.map((track: { location: string }) => ({
-          location: track.location.replace('file:', 'showtime:'),
-          name: decodeName(track.location.split('/').slice(-1)[0].slice(0, -4))
-        }));
-        setTracks(tracks);
+        const parsedTracks: Track[] =
+          parsedPlaylist.playlist.trackList.track.map(
+            (track: { location: string }) => ({
+              location: track.location.replace('file:', 'showtime:'),
+              name: decodeName(
+                track.location.split('/').slice(-1)[0].slice(0, -4),
+              ),
+            }),
+          );
+        setTracks(parsedTracks);
       } catch (error) {
         setTracks([]);
         setTrackIndex(0);
-        alert('Failed to parse playlist file: ' + String(error));
+        alert(`Failed to parse playlist file: ${String(error)}`);
       }
     }
   };
 
   const remapTrackLocations = () => {
     const newTracks = tracks.map((track: Track) => ({
-      location: overrideWindowsDrive ? track.location.replace(/showtime:\/\/\/(.:)/, `showtime:///${windowsDrive}:`) : track.location,
-      name: track.name
+      location: overrideWindowsDrive
+        ? track.location.replace(
+            /showtime:\/\/\/(.:)/,
+            `showtime:///${windowsDrive}:`,
+          )
+        : track.location,
+      name: track.name,
     }));
     setTracks(newTracks);
   };
@@ -100,20 +111,19 @@ export const Showtime = () => {
     document.getElementById('next-button')?.blur();
   };
 
-  const UpNext = () => {
+  function UpNext() {
     if (trackIndex + 1 < tracks.length) {
       return (
         <VStack>
-          <Heading as={'h4'} size="md">Up Next </Heading>
+          <Heading as="h4" size="md">
+            Up Next{' '}
+          </Heading>
           <Text>{tracks[trackIndex + 1].name}</Text>
         </VStack>
       );
-    } else {
-      return (
-        <></>
-      );
     }
-  };
+    return <></>;
+  }
 
   const onDriveChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setWindowsDrive(e.target.value);
@@ -123,46 +133,71 @@ export const Showtime = () => {
     remapTrackLocations();
   }, [windowsDrive]);
 
-  const driveLetters: string[] = Array.from({ length: 26 }, (_, i) => String.fromCharCode('A'.charCodeAt(0) + i));
+  const driveLetters: string[] = Array.from({ length: 26 }, (_, i) =>
+    String.fromCharCode('A'.charCodeAt(0) + i),
+  );
 
   return (
-    <Page name={'Showtime'}>
+    <Page name="Showtime">
       <Center>
-        <VStack gap={'15px'} w={'75vw'}>
+        <VStack gap="15px" w="75vw">
           <HStack spacing="5px">
             <FilePicker
               onFileChange={handleChange}
               placeholder="Select a Playlist"
               accept=".xspf"
             />
-            <IconButton id="settings-button" aria-label={'settings'} icon={<FaGear />} onClick={handleSettingsOpen} />
+            <IconButton
+              id="settings-button"
+              aria-label="settings"
+              icon={<FaGear />}
+              onClick={handleSettingsOpen}
+            />
           </HStack>
           {file && tracks.length > 0 && (
-            <Card w={'100%'}>
+            <Card w="100%">
               <CardBody>
-                <VStack w={'100%'}>
+                <VStack w="100%">
                   <Center>
                     <VStack>
-                      <Heading as={'h3'} size="lg">Currently Playing</Heading>
+                      <Heading as="h3" size="lg">
+                        Currently Playing
+                      </Heading>
                       <Text>{tracks[trackIndex].name}</Text>
-                      <Text>Track {trackIndex + 1}/{tracks.length}</Text>
-                      {trackIndex == tracks.length - 1 ? <Badge colorScheme={'orange'}>(last song!)</Badge> : <></>}
+                      <Text>
+                        Track {trackIndex + 1}/{tracks.length}
+                      </Text>
+                      {trackIndex === tracks.length - 1 ? (
+                        <Badge colorScheme="orange">(last song!)</Badge>
+                      ) : (
+                        <></>
+                      )}
                     </VStack>
                   </Center>
 
-                  <AudioPlayer src={tracks[trackIndex].location} onEnd={handleNext} autoPlay={autoPlay} />
+                  <AudioPlayer
+                    src={tracks[trackIndex].location}
+                    onEnd={handleNext}
+                    autoPlay={autoPlay}
+                  />
                   <Center>
                     <UpNext />
                   </Center>
-                  <Flex justifyContent={'space-between'} w={'100%'}>
-                    {trackIndex > 0 ?
-                      <Button id={'previous-button'} onClick={handlePrevious}>Previous</Button>
-                      : <Box></Box>
-                    }
-                    {trackIndex < tracks.length - 1 ?
-                      <Button id={'next-button'} onClick={handleNext}>Next</Button>
-                      : <Box></Box>
-                    }
+                  <Flex justifyContent="space-between" w="100%">
+                    {trackIndex > 0 ? (
+                      <Button id="previous-button" onClick={handlePrevious}>
+                        Previous
+                      </Button>
+                    ) : (
+                      <Box />
+                    )}
+                    {trackIndex < tracks.length - 1 ? (
+                      <Button id="next-button" onClick={handleNext}>
+                        Next
+                      </Button>
+                    ) : (
+                      <Box />
+                    )}
                   </Flex>
                 </VStack>
               </CardBody>
@@ -175,23 +210,34 @@ export const Showtime = () => {
             <ModalHeader>Settings</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
-              <HStack w={'100%'} justifyContent={'space-between'}>
-                <Checkbox isDisabled={!isWindows}
-                          isChecked={overrideWindowsDrive}
-                          onChange={(e) => {
-                            setOverrideWindowsDrive(e.target.checked);
-                          }}>Override Windows Drive</Checkbox>
+              <HStack w="100%" justifyContent="space-between">
+                <Checkbox
+                  isDisabled={!isWindows}
+                  isChecked={overrideWindowsDrive}
+                  onChange={(e) => {
+                    setOverrideWindowsDrive(e.target.checked);
+                  }}
+                >
+                  Override Windows Drive
+                </Checkbox>
                 {overrideWindowsDrive && (
-                  <Select value={windowsDrive} onChange={onDriveChange} w={'25%'}>
+                  <Select value={windowsDrive} onChange={onDriveChange} w="25%">
                     {driveLetters.map((letter) => (
-                      <option key={letter} value={letter}>{letter}:</option>
+                      <option key={letter} value={letter}>
+                        {letter}:
+                      </option>
                     ))}
                   </Select>
                 )}
               </HStack>
-              <Checkbox isChecked={autoPlay} onChange={(e) => {
-                setAutoPlay(e.target.checked);
-              }}>Auto Play</Checkbox>
+              <Checkbox
+                isChecked={autoPlay}
+                onChange={(e) => {
+                  setAutoPlay(e.target.checked);
+                }}
+              >
+                Auto Play
+              </Checkbox>
             </ModalBody>
 
             <ModalFooter>
@@ -204,4 +250,4 @@ export const Showtime = () => {
       </Center>
     </Page>
   );
-};
+}

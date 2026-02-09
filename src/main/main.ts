@@ -1,8 +1,8 @@
 /* eslint global-require: off, no-console: off, promise/always-return: off */
 
-import {app, BrowserWindow, net, protocol, shell} from 'electron';
+import { app, BrowserWindow, net, protocol, shell } from 'electron';
 import log from 'electron-log';
-import {autoUpdater} from 'electron-updater';
+import { autoUpdater } from 'electron-updater';
 /**
  * This module executes inside of electron's main process. You can start
  * electron renderer process from here and communicate with the other processes
@@ -13,8 +13,8 @@ import {autoUpdater} from 'electron-updater';
  */
 import path from 'path';
 import MenuBuilder from './menu';
-import {setupIPC} from './setupIPC';
-import {resolveHtmlPath} from './util';
+import { setupIPC } from './setupIPC';
+import { resolveHtmlPath } from './util';
 
 class AppUpdater {
   constructor() {
@@ -26,7 +26,7 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 
-setupIPC()
+setupIPC();
 
 if (process.env.NODE_ENV === 'production') {
   const sourceMapSupport = require('source-map-support');
@@ -40,7 +40,6 @@ if (isDebug) {
 }
 
 const createWindow = async () => {
-
   const RESOURCES_PATH = app.isPackaged
     ? path.join(process.resourcesPath, 'assets')
     : path.join(__dirname, '../../assets');
@@ -105,18 +104,21 @@ protocol.registerSchemesAsPrivileged([
     privileges: {
       bypassCSP: true,
       stream: true,
-    }
-  }
+    },
+  },
 ]);
 
 /**
  * Add event listeners...
  */
-app.whenReady().then(() => {
-  protocol.handle('showtime', (req) => {
-    return net.fetch('file://' + req.url.slice('showtime://'.length))
-  });
-});
+app
+  .whenReady()
+  .then(() => {
+    protocol.handle('showtime', (req) => {
+      return net.fetch(`file://${req.url.slice('showtime://'.length)}`);
+    });
+  })
+  .catch(console.error);
 
 app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even

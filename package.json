@@ -239,7 +239,8 @@
     "publish": {
       "provider": "github",
       "owner": "aaavang",
-      "repo": "showtime-electron"
+      "repo": "showtime-electron",
+      "releaseType": "release"
     }
   },
   "collective": {

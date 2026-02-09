@@ -1,16 +1,26 @@
-import {Button, HStack, Table, TableContainer, Tbody, Td, Th, Thead, Tr} from '@chakra-ui/react';
-import {useLiveQuery} from 'dexie-react-hooks';
+import {
+  Button,
+  HStack,
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+} from '@chakra-ui/react';
+import { useLiveQuery } from 'dexie-react-hooks';
 import React from 'react';
-import {Page} from '../common/Page';
-import {database} from '../database';
+import { Page } from '../common/Page';
+import { database } from '../database';
 
-export const PlaylistDetails = () => {
+export function PlaylistDetails() {
   const playlists = useLiveQuery(() => database.playlists.toArray());
 
   return (
-    <Page name={'Playlists'}>
+    <Page name="Playlists">
       <TableContainer>
-        <Table variant='simple'>
+        <Table variant="simple">
           <Thead>
             <Tr>
               <Th>Title</Th>
@@ -22,7 +32,7 @@ export const PlaylistDetails = () => {
               <Tr key={dance.id}>
                 <Td>{dance.title}</Td>
                 <Td>
-                  <HStack gap='5px'>
+                  <HStack gap="5px">
                     <Button>Edit</Button>
                     <Button>Delete</Button>
                   </HStack>

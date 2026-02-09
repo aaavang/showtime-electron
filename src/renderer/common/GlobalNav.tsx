@@ -1,12 +1,13 @@
-import {Box, Link, Tab, TabList, Tabs} from '@chakra-ui/react';
+import { Box, Link, Tab, TabList, Tabs } from '@chakra-ui/react';
 import React from 'react';
-import {Link as ReactRouterLink, useLocation} from 'react-router-dom';
+import { Link as ReactRouterLink, useLocation } from 'react-router-dom';
 
-export const GlobalNav = () => {
+export function GlobalNav() {
   const location = useLocation();
   const { pathname } = location;
 
-  const pathBase = pathname.split('/').length == 1 ? '/' : pathname.split('/')[1];
+  const pathBase =
+    pathname.split('/').length === 1 ? '/' : pathname.split('/')[1];
 
   let index;
   switch (pathBase) {
@@ -34,33 +35,22 @@ export const GlobalNav = () => {
       <Tabs variant="enclosed" defaultIndex={index}>
         <TabList>
           <Link as={ReactRouterLink} to="/">
-            <Tab>
-              Showtime
-            </Tab>
+            <Tab>Showtime</Tab>
           </Link>
           <Link as={ReactRouterLink} to="/dances">
-            <Tab>
-              Dances
-            </Tab>
+            <Tab>Dances</Tab>
           </Link>
           <Link as={ReactRouterLink} to="/songs">
-            <Tab>
-              Songs
-            </Tab>
+            <Tab>Songs</Tab>
           </Link>
           <Link as={ReactRouterLink} to="/playlists">
-            <Tab>
-              Playlists
-            </Tab>
+            <Tab>Playlists</Tab>
           </Link>
           <Link as={ReactRouterLink} to="/settings">
-            <Tab>
-              Settings
-            </Tab>
+            <Tab>Settings</Tab>
           </Link>
         </TabList>
       </Tabs>
     </Box>
-
   );
-};
+}

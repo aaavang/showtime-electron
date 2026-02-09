@@ -1,11 +1,13 @@
 // jsdom environment lacks structuredClone; polyfill before fake-indexeddb uses it
+import 'fake-indexeddb/auto';
+import Dexie, { EntityTable } from 'dexie';
+
+/* eslint-disable no-undef */
 if (typeof globalThis.structuredClone === 'undefined') {
   globalThis.structuredClone = <T>(val: T): T =>
     JSON.parse(JSON.stringify(val));
 }
-
-import 'fake-indexeddb/auto';
-import Dexie, { EntityTable } from 'dexie';
+/* eslint-enable no-undef */
 
 type Song = {
   id: number;
@@ -27,7 +29,7 @@ type DanceVariant = {
 };
 
 function createTestDb() {
-  const db = new Dexie('test-showtime-' + Math.random()) as Dexie & {
+  const db = new Dexie(`test-showtime-${Math.random()}`) as Dexie & {
     songs: EntityTable<Song, 'id'>;
     dances: EntityTable<Dance, 'id'>;
     danceVariants: EntityTable<DanceVariant, 'id'>;
@@ -89,7 +91,10 @@ describe('Song CRUD', () => {
       { title: 'B', path: '/music/b.mp3' } as Song,
       { title: 'C', path: '/music/a.mp3' } as Song,
     ]);
-    const results = await db.songs.where('path').equals('/music/a.mp3').toArray();
+    const results = await db.songs
+      .where('path')
+      .equals('/music/a.mp3')
+      .toArray();
     expect(results.length).toBe(2);
     expect(results.every((s) => s.path === '/music/a.mp3')).toBe(true);
   });

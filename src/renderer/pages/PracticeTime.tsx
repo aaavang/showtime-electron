@@ -1,4 +1,4 @@
-import {ChevronDownIcon, MenuButton} from '@chakra-ui/icons';
+import { ChevronDownIcon, MenuButton } from '@chakra-ui/icons';
 import {
   Button,
   Checkbox,
@@ -16,24 +16,37 @@ import {
   Th,
   Thead,
   Tr,
-  useToast
+  useToast,
 } from '@chakra-ui/react';
-import {createColumnHelper, flexRender, getCoreRowModel, useReactTable} from '@tanstack/react-table';
-import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
-import {MdCleaningServices, MdFileOpen, MdOutbound, MdSave} from 'react-icons/md';
+import {
+  createColumnHelper,
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+} from '@tanstack/react-table';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  MdCleaningServices,
+  MdFileOpen,
+  MdOutbound,
+  MdSave,
+} from 'react-icons/md';
 import * as builder from 'xmlbuilder';
-import {Page} from '../common/Page';
-import {database, Playlist} from '../database';
-import {useSavePlaylistModal} from '../hooks/SavePlaylistModal';
-import {HydratedDanceVariant, useSelectDanceModal} from '../hooks/SelectDanceModal';
-import {useSelectPlaylistModal} from '../hooks/SelectPlaylistModal';
-import {JukeboxState} from '../hooks/useJukebox';
-import {useSongPathEncoder} from '../hooks/useSongPathEncoder';
-import {JukeboxContext} from '../providers/JukeboxProvider';
-import {UserSettingsContext} from '../providers/UserSettingsProvider';
-import {useClickAway, useKeyPressEvent} from 'react-use';
+import { useClickAway, useKeyPressEvent } from 'react-use';
+import { Page } from '../common/Page';
+import { database, Playlist } from '../database';
+import { useSavePlaylistModal } from '../hooks/SavePlaylistModal';
+import {
+  HydratedDanceVariant,
+  useSelectDanceModal,
+} from '../hooks/SelectDanceModal';
+import { useSelectPlaylistModal } from '../hooks/SelectPlaylistModal';
+import { JukeboxState } from '../hooks/useJukebox';
+import { useSongPathEncoder } from '../hooks/useSongPathEncoder';
+import { JukeboxContext } from '../providers/JukeboxProvider';
+import { UserSettingsContext } from '../providers/UserSettingsProvider';
 
-export const PracticeTime = () => {
+export function PracticeTime() {
   const toast = useToast();
   const { jukeboxState, setJukeboxState } = useContext(JukeboxContext);
   const songPathEncoder = useSongPathEncoder();
@@ -41,10 +54,12 @@ export const PracticeTime = () => {
   const [tracks, setTracks] = useState<HydratedDanceVariant[]>([]);
   const [currentTrackIndex, setCurrentTrackIndex] = useState(0);
   const [selectDanceModalDisclosure, SelectDanceModal] = useSelectDanceModal();
-  const [savePlaylistModalDisclosure, SavePlaylistModal] = useSavePlaylistModal();
-  const [selectPlaylistModalDisclosure, SelectPlaylistModal] = useSelectPlaylistModal();
+  const [savePlaylistModalDisclosure, SavePlaylistModal] =
+    useSavePlaylistModal();
+  const [selectPlaylistModalDisclosure, SelectPlaylistModal] =
+    useSelectPlaylistModal();
   const [showMode, setShowMode] = useState(false);
-  const [userSettings] = useContext(UserSettingsContext)
+  const [userSettings] = useContext(UserSettingsContext);
   const [clickedRowNumber, setClickedRowNumber] = useState<number | null>(null);
   const tableRef = useRef(null);
   useClickAway(tableRef, () => {
@@ -67,7 +82,6 @@ export const PracticeTime = () => {
     setLoaded(true);
   }, []);
 
-
   const currentTrackIndexRef = useRef(currentTrackIndex);
   useEffect(() => {
     currentTrackIndexRef.current = currentTrackIndex;
@@ -75,99 +89,117 @@ export const PracticeTime = () => {
 
   const columnHelper = createColumnHelper<HydratedDanceVariant>();
 
-  const columns = useMemo(() => [
-    columnHelper.display({
-      id: 'order',
-      header: 'Order',
-      cell: (info) => (
-        <HStack>
-          <Text>{info.row.index + 1}</Text>
-          {/*{!showMode && <>*/}
-          {/*  <IconButton isDisabled={info.row.index === 0} aria-label={'move-up'} colorScheme={'gray'} variant={'ghost'}*/}
-          {/*              icon={<ArrowUpIcon />} size={'sm'} onClick={(e) => {*/}
-          {/*                e.stopPropagation();*/}
-          {/*    moveSongUp(info.row.index);*/}
-          {/*  }} />*/}
-          {/*  <IconButton isDisabled={info.row.index >= table.getRowModel().rows.length - 1} aria-label={'move-down'}*/}
-          {/*              colorScheme={'gray'} variant={'ghost'} icon={<ArrowDownIcon />} size={'sm'}*/}
-          {/*              onClick={(e) => {*/}
-          {/*                e.stopPropagation();*/}
-          {/*                moveSongDown(info.row.index);*/}
-          {/*              }} />*/}
-          {/*</>}*/}
-        </HStack>
-      )
-    }),
-    columnHelper.accessor('dance.title', {
-      cell: (info) => info.getValue(),
-      header: 'Dance'
-    }),
-    columnHelper.accessor('danceVariant.title', {
-      cell: (info) => info.getValue(),
-      header: 'Variant'
-    }),
-    columnHelper.accessor('song.title', {
-      cell: (info) => info.getValue(),
-      header: 'Song'
-    }),
-    columnHelper.accessor('autoplay', {
-      cell: (info) => <Checkbox isDisabled={showMode} isChecked={info.row.original.autoplay} onChange={() => {
-        info.row.original.autoplay = !info.row.original.autoplay;
-        setTracks(info.table.getRowModel().rows.map(r => r.original))
-      }} /> ,
-      header: 'Autoplay'
-    }),
-    columnHelper.display({
-      id: 'actions',
-      header: 'Actions',
-      cell: (info) => (
-        <HStack gap="5px">
-          <Button
-            colorScheme={'green'}
-            variant={'outline'}
-            onClick={(e) => {
-              e.stopPropagation();
-              const newJukeboxState: JukeboxState = {
-                showMode,
-                closeOnEnd: true,
-                onEnd: onPlaylistEnd,
-                showJukebox: true,
-                dance: info.row.original.dance,
-                variant: info.row.original.danceVariant,
-                song: info.row.original.song,
-                currentTrackIndex: info.row.index,
-                playlist: info.table.getRowModel().rows.map(r => r.original),
-                autoplay: info.row.original.autoplay
-              };
-              setJukeboxState(newJukeboxState);
-              setCurrentTrackIndex(info.row.index);
-              setClickedRowNumber(null)
+  const columns = useMemo(
+    () => [
+      columnHelper.display({
+        id: 'order',
+        header: 'Order',
+        cell: (info) => (
+          <HStack>
+            <Text>{info.row.index + 1}</Text>
+            {/* {!showMode && <> */}
+            {/*  <IconButton isDisabled={info.row.index === 0} aria-label={'move-up'} colorScheme={'gray'} variant={'ghost'} */}
+            {/*              icon={<ArrowUpIcon />} size={'sm'} onClick={(e) => { */}
+            {/*                e.stopPropagation(); */}
+            {/*    moveSongUp(info.row.index); */}
+            {/*  }} /> */}
+            {/*  <IconButton isDisabled={info.row.index >= table.getRowModel().rows.length - 1} aria-label={'move-down'} */}
+            {/*              colorScheme={'gray'} variant={'ghost'} icon={<ArrowDownIcon />} size={'sm'} */}
+            {/*              onClick={(e) => { */}
+            {/*                e.stopPropagation(); */}
+            {/*                moveSongDown(info.row.index); */}
+            {/*              }} /> */}
+            {/* </>} */}
+          </HStack>
+        ),
+      }),
+      columnHelper.accessor('dance.title', {
+        cell: (info) => info.getValue(),
+        header: 'Dance',
+      }),
+      columnHelper.accessor('danceVariant.title', {
+        cell: (info) => info.getValue(),
+        header: 'Variant',
+      }),
+      columnHelper.accessor('song.title', {
+        cell: (info) => info.getValue(),
+        header: 'Song',
+      }),
+      columnHelper.accessor('autoplay', {
+        cell: (info) => (
+          <Checkbox
+            isDisabled={showMode}
+            isChecked={info.row.original.autoplay}
+            onChange={() => {
+              info.row.original.autoplay = !info.row.original.autoplay;
+              setTracks(info.table.getRowModel().rows.map((r) => r.original));
             }}
-          >Play</Button>
-          {!showMode && <Button colorScheme={'red'} variant={'outline'}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  deleteRow(info.row.index);
-                                }}>Remove</Button>}
-        </HStack>
-      )
-    })
-  ], [showMode]);
+          />
+        ),
+        header: 'Autoplay',
+      }),
+      columnHelper.display({
+        id: 'actions',
+        header: 'Actions',
+        cell: (info) => (
+          <HStack gap="5px">
+            <Button
+              colorScheme="green"
+              variant="outline"
+              onClick={(e) => {
+                e.stopPropagation();
+                const newJukeboxState: JukeboxState = {
+                  showMode,
+                  closeOnEnd: true,
+                  onEnd: onPlaylistEnd,
+                  showJukebox: true,
+                  dance: info.row.original.dance,
+                  variant: info.row.original.danceVariant,
+                  song: info.row.original.song,
+                  currentTrackIndex: info.row.index,
+                  playlist: info.table
+                    .getRowModel()
+                    .rows.map((r) => r.original),
+                  autoplay: info.row.original.autoplay,
+                };
+                setJukeboxState(newJukeboxState);
+                setCurrentTrackIndex(info.row.index);
+                setClickedRowNumber(null);
+              }}
+            >
+              Play
+            </Button>
+            {!showMode && (
+              <Button
+                colorScheme="red"
+                variant="outline"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  deleteRow(info.row.index);
+                }}
+              >
+                Remove
+              </Button>
+            )}
+          </HStack>
+        ),
+      }),
+    ],
+    [showMode],
+  );
 
-  const table = useReactTable(
-    {
-      columns,
-      data: tracks,
-      getCoreRowModel: getCoreRowModel(),
-      columnResizeMode: 'onChange',
-      columnResizeDirection: 'ltr',
-      initialState: {
-        columnVisibility: {
-          autoplay: userSettings.enableFineGrainAutoplay
-        }
-      }
-    }
-  )
+  const table = useReactTable({
+    columns,
+    data: tracks,
+    getCoreRowModel: getCoreRowModel(),
+    columnResizeMode: 'onChange',
+    columnResizeDirection: 'ltr',
+    initialState: {
+      columnVisibility: {
+        autoplay: userSettings.enableFineGrainAutoplay,
+      },
+    },
+  });
 
   const moveSongUp = (index: number) => {
     if (index <= 0) {
@@ -194,13 +226,13 @@ export const PracticeTime = () => {
       title: 'All done!',
       status: 'success',
       duration: 2000,
-      isClosable: true
+      isClosable: true,
     });
-  }
+  };
 
   const addTrack = (track: HydratedDanceVariant) => {
     setTracks([...tracks, track]);
-  }
+  };
 
   const deleteRow = (index: number) => {
     setTracks([...tracksRef.current.filter((_, i) => i !== index)]);
@@ -212,8 +244,8 @@ export const PracticeTime = () => {
   };
 
   const loadPlaylist = async (playlist: Playlist) => {
-    const tracks = JSON.parse(playlist.tracksString);
-    setTracks(tracks);
+    const loadedTracks = JSON.parse(playlist.tracksString);
+    setTracks(loadedTracks);
   };
 
   const toggleShow = () => {
@@ -223,12 +255,12 @@ export const PracticeTime = () => {
 
   const exportPlaylist = () => {
     window.electron.ipcRenderer.once('exportPlaylist', (arg: any) => {
-      if(arg.path) {
+      if (arg.path) {
         toast({
           title: `Playlist exported to "${arg.path}"`,
           status: 'success',
           duration: 2000,
-          isClosable: true
+          isClosable: true,
         });
       }
     });
@@ -238,19 +270,22 @@ export const PracticeTime = () => {
         '@version': '1',
         '@xmlns': 'http://xspf.org/ns/0/',
         trackList: {
-          track: tracks.map(track => ({
+          track: tracks.map((track) => ({
             title: track.song.title,
-            location: songPathEncoder(track.song).replace('showtime://', 'file://')
-          }))
-        }
-      }
+            location: songPathEncoder(track.song).replace(
+              'showtime://',
+              'file://',
+            ),
+          })),
+        },
+      },
     };
 
     const xml = builder.create(xmlObject).end({ pretty: true });
 
     window.electron.ipcRenderer.sendMessage('exportPlaylist', {
-      xml
-    })
+      xml,
+    });
   };
 
   const handleRowClick = (rowIndex: number) => {
@@ -262,31 +297,47 @@ export const PracticeTime = () => {
     } else {
       setClickedRowNumber(rowIndex);
     }
-  }
+  };
 
   useKeyPressEvent('ArrowUp', () => {
-    if (clickedRowNumber !== null && clickedRowNumber > 0 && !jukeboxState.showJukebox && !showMode) {
+    if (
+      clickedRowNumber !== null &&
+      clickedRowNumber > 0 &&
+      !jukeboxState.showJukebox &&
+      !showMode
+    ) {
       moveSongUp(clickedRowNumber);
       setClickedRowNumber(clickedRowNumber - 1);
     }
-  })
+  });
   useKeyPressEvent('ArrowDown', () => {
-    if (clickedRowNumber !== null && clickedRowNumber < tracks.length - 1 && !jukeboxState.showJukebox && !showMode) {
+    if (
+      clickedRowNumber !== null &&
+      clickedRowNumber < tracks.length - 1 &&
+      !jukeboxState.showJukebox &&
+      !showMode
+    ) {
       moveSongDown(clickedRowNumber);
       setClickedRowNumber(clickedRowNumber + 1);
     }
-  })
+  });
   useKeyPressEvent('Escape', () => {
     setClickedRowNumber(null);
-  })
+  });
 
   return (
     <Page name={showMode ? 'Showtime!' : 'Practice Time'}>
-      <TableContainer whiteSpace={'wrap'} width={'100%'} ref={tableRef}>
-        <HStack justifyContent={'space-between'}>
+      <TableContainer whiteSpace="wrap" width="100%" ref={tableRef}>
+        <HStack justifyContent="space-between">
           <Flex flexGrow={1}>
-            {!showMode &&
-              <Button colorScheme={'green'} onClick={selectDanceModalDisclosure.onOpen}>+ Add Dance</Button>}
+            {!showMode && (
+              <Button
+                colorScheme="green"
+                onClick={selectDanceModalDisclosure.onOpen}
+              >
+                + Add Dance
+              </Button>
+            )}
           </Flex>
           <>
             <Menu>
@@ -294,16 +345,54 @@ export const PracticeTime = () => {
                 Playlist Actions...
               </MenuButton>
               <MenuList>
-                {!showMode &&<MenuItem icon={<MdFileOpen />} onClick={selectPlaylistModalDisclosure.onOpen}>Load...</MenuItem>}
-                {!showMode && <MenuItem icon={<MdSave />} onClick={savePlaylistModalDisclosure.onOpen}>Save...</MenuItem>}
-                {!showMode && <MenuItem icon={<MdOutbound />} onClick={exportPlaylist}>Export...</MenuItem>}
-                {!showMode && <MenuItem icon={<MdCleaningServices />} onClick={() => setTracks([])}>Clear</MenuItem>}
-                {!showMode && <MenuItem icon={<MdCleaningServices />} onClick={() => setTracks(tracks.map(t => {
-                  t.autoplay = false;
-                  return t;
-                }))}>Clear Autoplay</MenuItem>}
+                {!showMode && (
+                  <MenuItem
+                    icon={<MdFileOpen />}
+                    onClick={selectPlaylistModalDisclosure.onOpen}
+                  >
+                    Load...
+                  </MenuItem>
+                )}
+                {!showMode && (
+                  <MenuItem
+                    icon={<MdSave />}
+                    onClick={savePlaylistModalDisclosure.onOpen}
+                  >
+                    Save...
+                  </MenuItem>
+                )}
+                {!showMode && (
+                  <MenuItem icon={<MdOutbound />} onClick={exportPlaylist}>
+                    Export...
+                  </MenuItem>
+                )}
+                {!showMode && (
+                  <MenuItem
+                    icon={<MdCleaningServices />}
+                    onClick={() => setTracks([])}
+                  >
+                    Clear
+                  </MenuItem>
+                )}
+                {!showMode && (
+                  <MenuItem
+                    icon={<MdCleaningServices />}
+                    onClick={() =>
+                      setTracks(
+                        tracks.map((t) => {
+                          t.autoplay = false;
+                          return t;
+                        }),
+                      )
+                    }
+                  >
+                    Clear Autoplay
+                  </MenuItem>
+                )}
                 <MenuGroup title="Showtime">
-                  <MenuItem onClick={toggleShow}>{showMode ? 'Stop show' : 'Run show!'}</MenuItem>
+                  <MenuItem onClick={toggleShow}>
+                    {showMode ? 'Stop show' : 'Run show!'}
+                  </MenuItem>
                 </MenuGroup>
               </MenuList>
             </Menu>
@@ -315,15 +404,12 @@ export const PracticeTime = () => {
               <Tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
                   // see https://tanstack.com/table/v8/docs/api/core/column-def#meta to type this correctly
-                  const meta: any = header.column.columnDef.meta;
+                  const { meta } = header.column.columnDef;
                   return (
-                    <Th
-                      key={header.id}
-                      isNumeric={meta?.isNumeric}
-                    >
+                    <Th key={header.id} isNumeric={meta?.isNumeric}>
                       {flexRender(
                         header.column.columnDef.header,
-                        header.getContext()
+                        header.getContext(),
                       )}
                     </Th>
                   );
@@ -333,13 +419,24 @@ export const PracticeTime = () => {
           </Thead>
           <Tbody>
             {table.getRowModel().rows.map((row) => (
-              <Tr key={row.id} onClick={() => handleRowClick(row.index)} boxShadow={clickedRowNumber === row.index ? 'inset 0px 0px 0px 2px gray;' : 'none'}>
+              <Tr
+                key={row.id}
+                onClick={() => handleRowClick(row.index)}
+                boxShadow={
+                  clickedRowNumber === row.index
+                    ? 'inset 0px 0px 0px 2px gray;'
+                    : 'none'
+                }
+              >
                 {row.getVisibleCells().map((cell) => {
                   // see https://tanstack.com/table/v8/docs/api/core/column-def#meta to type this correctly
-                  const meta: any = cell.column.columnDef.meta;
+                  const { meta } = cell.column.columnDef;
                   return (
                     <Td key={cell.id} isNumeric={meta?.isNumeric}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
                     </Td>
                   );
                 })}
@@ -353,4 +450,4 @@ export const PracticeTime = () => {
       <SelectPlaylistModal onSubmit={loadPlaylist} />
     </Page>
   );
-};
+}

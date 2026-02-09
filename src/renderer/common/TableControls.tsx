@@ -1,9 +1,17 @@
-import {Button, Center, Divider, HStack, Input, Select, Text} from '@chakra-ui/react';
-import {Table as ReactTable} from '@tanstack/react-table';
+import {
+  Button,
+  Center,
+  Divider,
+  HStack,
+  Input,
+  Select,
+  Text,
+} from '@chakra-ui/react';
+import { Table as ReactTable } from '@tanstack/react-table';
 
 export function TableControls<T>({ table }: { table: ReactTable<T> }) {
   return (
-    <HStack gap={'15px'} justifyContent={'center'} py={3} flexShrink={0}>
+    <HStack gap="15px" justifyContent="center" py={3} flexShrink={0}>
       <Button
         onClick={() => table.setPageIndex(0)}
         isDisabled={!table.getCanPreviousPage()}
@@ -28,23 +36,22 @@ export function TableControls<T>({ table }: { table: ReactTable<T> }) {
       >
         {'>>'}
       </Button>
-      <Center gap={'5px'}>
+      <Center gap="5px">
         <Text>Page</Text>
         <strong>
-          {table.getState().pagination.pageIndex + 1} of{' '}
-          {table.getPageCount()}
+          {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
         </strong>
       </Center>
       <Center height="20px">
         <Divider orientation="vertical" />
       </Center>
-      <Center gap={'5px'}>
+      <Center gap="5px">
         Go to page:
         <Input
-          width={'100px'}
+          width="100px"
           type="number"
           defaultValue={table.getState().pagination.pageIndex + 1}
-          onChange={e => {
+          onChange={(e) => {
             const page = e.target.value ? Number(e.target.value) - 1 : 0;
             if (page >= 0 && page < table.getPageCount())
               table.setPageIndex(page);
@@ -52,13 +59,13 @@ export function TableControls<T>({ table }: { table: ReactTable<T> }) {
         />
       </Center>
       <Select
-        width={'150px'}
+        width="150px"
         value={table.getState().pagination.pageSize}
-        onChange={e => {
+        onChange={(e) => {
           table.setPageSize(Number(e.target.value));
         }}
       >
-        {[10, 20, 30, 40, 50].map(pageSize => (
+        {[10, 20, 30, 40, 50].map((pageSize) => (
           <option key={pageSize} value={pageSize}>
             Show {pageSize}
           </option>
