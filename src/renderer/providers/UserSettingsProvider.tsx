@@ -1,5 +1,5 @@
-import { createContext, useEffect, useState } from 'react';
-import { useLocalStorage } from 'react-use';
+import {createContext, useEffect} from 'react';
+import {useLocalStorage} from 'react-use';
 
 
 export type UserSettings = {
@@ -16,41 +16,22 @@ const defaultUserSettings = {
 
 export const UserSettingsContext = createContext([defaultUserSettings, (settings: UserSettings) => {}] as [UserSettings, (settings: UserSettings) => void]);
 
-export const useUserSettings = () => {
-  const userState = useLocalStorage("userSettings", defaultUserSettings);
-
-  useEffect(() => {
-    window.electron.ipcRenderer.once('getPlatform', (platform: any) => {
-      console.log('setting platform', platform)
-      if (platform === 'win32') {
-        userState[1]({
-          ...userState[0],
-          isWindows: true
-        } as any);
-      } else {
-        userState[1]({
-          ...userState[0],
-          isWindows: false
-        } as any);
-      }
-    });
-
-    window.electron.ipcRenderer.sendMessage('getPlatform');
-  }, []);
-
-  return userState
-}
-
 export const UserSettingsProvider = ({ children }: { children: React.ReactNode }) => {
   const [userSettings, setUserSettings] = useLocalStorage("userSettings", defaultUserSettings);
 
   useEffect(() => {
-    window.electron.ipcRenderer.once('getPlatform', (platform: any) => {
+    window.electron.ipcRenderer.once('getPlatform', (...args: unknown[]) => {
+      const platform = args[0] as string;
       if (platform === 'win32') {
         setUserSettings({
           ...userSettings,
           isWindows: true
-        } as any);
+        } as UserSettings);
+      } else {
+        setUserSettings({
+          ...userSettings,
+          isWindows: false
+        } as UserSettings);
       }
     });
 

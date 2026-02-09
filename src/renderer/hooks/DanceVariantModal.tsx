@@ -1,20 +1,23 @@
 import {
   Button,
   Checkbox,
-  Input, Modal,
+  Input,
+  Modal,
   ModalBody,
   ModalCloseButton,
-  ModalContent, ModalFooter,
+  ModalContent,
+  ModalFooter,
   ModalHeader,
   ModalOverlay,
-  Text, useDisclosure,
+  Text,
+  useDisclosure,
   VStack
 } from '@chakra-ui/react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import React, { useEffect, useRef, useState } from 'react';
+import {useLiveQuery} from 'dexie-react-hooks';
+import React, {useState} from 'react';
 import AsyncSelect from 'react-select/async';
-import { DanceVariant, database, Song } from '../database';
-import { Option } from '../types/Option';
+import {DanceVariant, database} from '../database';
+import {Option} from '../types/Option';
 
 export type DanceVariantModalProps = {
   onSubmit: (data: Partial<DanceVariant>) => void;

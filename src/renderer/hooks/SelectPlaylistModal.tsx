@@ -1,6 +1,5 @@
 import {
   Button,
-  Input,
   Modal,
   ModalBody,
   ModalCloseButton,
@@ -10,13 +9,12 @@ import {
   ModalOverlay,
   Text,
   useDisclosure,
-  useToast,
   VStack
 } from '@chakra-ui/react';
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import AsyncSelect from 'react-select/async';
-import { database, Playlist } from '../database';
-import { Option } from '../types/Option';
+import {database, Playlist} from '../database';
+import {Option} from '../types/Option';
 import {useLiveQuery} from "dexie-react-hooks";
 
 export type SelectPlaylistModalProps = {

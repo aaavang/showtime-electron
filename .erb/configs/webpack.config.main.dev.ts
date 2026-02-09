@@ -4,8 +4,8 @@
 
 import path from 'path';
 import webpack from 'webpack';
-import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer';
-import { merge } from 'webpack-merge';
+import {BundleAnalyzerPlugin} from 'webpack-bundle-analyzer';
+import {merge} from 'webpack-merge';
 import checkNodeEnv from '../scripts/check-node-env';
 import baseConfig from './webpack.config.base';
 import webpackPaths from './webpack.paths';

@@ -1,6 +1,6 @@
-import { useContext } from 'react';
-import { Song } from '../database';
-import { UserSettingsContext } from '../providers/UserSettingsProvider';
+import {useContext} from 'react';
+import {Song} from '../database';
+import {UserSettingsContext} from '../providers/UserSettingsProvider';
 
 export const useSongPathEncoder = () => {
   const [userSettings] = useContext(UserSettingsContext);

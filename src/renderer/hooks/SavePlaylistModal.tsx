@@ -1,5 +1,6 @@
 import {
-  Button, Heading,
+  Button,
+  Heading,
   Input,
   Modal,
   ModalBody,
@@ -13,9 +14,9 @@ import {
   useToast,
   VStack
 } from '@chakra-ui/react';
-import React, { useCallback, useState } from 'react';
-import { database, Playlist } from '../database';
-import { confirmAction } from '../utils/ConfirmAction';
+import React, {useCallback, useState} from 'react';
+import {database, Playlist} from '../database';
+import {confirmAction} from '../utils/ConfirmAction';
 
 export type SavePlaylistModalProps = {
   onSubmit: (data: Playlist) => void;

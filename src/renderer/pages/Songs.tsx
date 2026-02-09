@@ -1,10 +1,9 @@
-import { MenuButton, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
+import {MenuButton, TriangleDownIcon, TriangleUpIcon} from '@chakra-ui/icons';
 import {
   Box,
   Button,
   Center,
   chakra,
-  Divider,
   HStack,
   Input,
   Menu,
@@ -17,9 +16,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
-  Select,
   Table,
-  TableContainer,
   Tbody,
   Td,
   Text,
@@ -42,25 +39,26 @@ import {
   SortingState,
   useReactTable
 } from '@tanstack/react-table';
-import { useLiveQuery } from 'dexie-react-hooks';
-import React, { useContext, useMemo, useState } from 'react';
-import { CiImport } from 'react-icons/ci';
-import { GrValidate } from 'react-icons/gr';
-import { MdAppRegistration, MdDelete } from 'react-icons/md';
-import { Filter } from '../common/Filter';
-import { Page } from '../common/Page';
-import { database, Song } from '../database';
-import { JukeboxState } from '../hooks/useJukebox';
-import { JukeboxContext } from '../providers/JukeboxProvider';
-import { confirmAction } from '../utils/ConfirmAction';
-import { decodeName } from '../utils/DecodeName';
-import { getFilename } from '../utils/Filename';
+import {useLiveQuery} from 'dexie-react-hooks';
+import React, {useContext, useMemo, useState} from 'react';
+import {CiImport} from 'react-icons/ci';
+import {GrValidate} from 'react-icons/gr';
+import {MdAppRegistration, MdDelete} from 'react-icons/md';
+import {DebouncedInput} from '../common/Filter';
+import {Page} from '../common/Page';
+import {TableControls} from '../common/TableControls';
+import {database, Song} from '../database';
+import {JukeboxState} from '../hooks/useJukebox';
+import {JukeboxContext} from '../providers/JukeboxProvider';
+import {confirmAction} from '../utils/ConfirmAction';
+import {decodeName} from '../utils/DecodeName';
+import {getFilename} from '../utils/Filename';
 
 export const Songs = () => {
   const toast = useToast();
   const {setJukeboxState} = useContext(JukeboxContext);
   const songs = useLiveQuery(() => database.songs.toArray());
-  const [validation, setValidation] = useState({ validated: false, invalidSongs: [] } as {
+  const [validation, setValidation] = useState({validated: false, invalidSongs: []} as {
     validated: boolean,
     invalidSongs: Song[]
   });
@@ -98,17 +96,17 @@ export const Songs = () => {
             }}
           >Play</Button>
           <Menu>
-            <MenuButton as={Button} rightIcon={<TriangleDownIcon />}>
+            <MenuButton as={Button} rightIcon={<TriangleDownIcon/>}>
               Actions...
             </MenuButton>
             <MenuList>
               <MenuItem
-                icon={<MdAppRegistration />}
+                icon={<MdAppRegistration/>}
                 onClick={() => {
-                  setNewSong({ ...info.row.original });
+                  setNewSong({...info.row.original});
                   newSongModal.onOpen();
                 }}>Edit...</MenuItem>
-              <MenuItem icon={<MdDelete />}
+              <MenuItem icon={<MdDelete/>}
                         onClick={confirmAction(`Delete ${info.row.original.title}?`, () => deleteSong(info.row.original.id))}>Delete</MenuItem>
             </MenuList>
           </Menu>
@@ -145,7 +143,8 @@ export const Songs = () => {
   };
 
   const handleOpenFile = async () => {
-    window.electron.ipcRenderer.once('selectAudioFile', (filePath: any) => {
+    window.electron.ipcRenderer.once('selectAudioFile', (...args: unknown[]) => {
+      const filePath = args[0] as string;
       setNewSong({
         ...newSong,
         title: decodeName(getFilename(filePath)),
@@ -157,7 +156,8 @@ export const Songs = () => {
   };
 
   const validateLibrary = async () => {
-    window.electron.ipcRenderer.once('validateLibrary', (response: any) => {
+    window.electron.ipcRenderer.once('validateLibrary', (...args: unknown[]) => {
+      const response = args[0] as { invalidSongs: Song[] };
       setValidation({
         validated: true,
         invalidSongs: response.invalidSongs
@@ -180,7 +180,7 @@ export const Songs = () => {
       }
     });
 
-    window.electron.ipcRenderer.sendMessage('validateLibrary', { songs });
+    window.electron.ipcRenderer.sendMessage('validateLibrary', {songs});
 
     // find duplicate songs
     const duplicateSongs = songs!.filter((song, index, self) => self.some(s => s.path === song.path && s.id !== song.id));
@@ -202,12 +202,11 @@ export const Songs = () => {
   };
 
   const importDirectory = async () => {
-    window.electron.ipcRenderer.once('getAudioFilesInDirectory', (response: any) => {
-      console.log('getAudioFilesInDirectory', response);
-
-      const newSongs = (response as string[]).map((path: string) => {
+    window.electron.ipcRenderer.once('getAudioFilesInDirectory', (...args: unknown[]) => {
+      const response = args[0] as string[];
+      const newSongs = response.map((path: string) => {
         const title = decodeName(getFilename(path));
-        return { title, path } as Song;
+        return {title, path} as Song;
       }).filter(s => !(songs!.some(song => song.path === s.path)));
 
       for (const song of newSongs) {
@@ -267,7 +266,6 @@ export const Songs = () => {
   const deleteSong = async (id: number) => {
     const variants = await database.danceVariants.where('songId').equals(id).toArray();
     const defaultVariants = variants.filter(v => v.defaultVariant);
-    console.log('defaultVariants', defaultVariants);
     if (variants.length > 0 && defaultVariants.length === 0) {
       confirmAction(`Delete ${variants.length} associated variants?`, async () => {
         for (const variant of variants) {
@@ -303,70 +301,74 @@ export const Songs = () => {
 
   return (
     <Page name={'Songs'}>
-      <VStack justifyContent={'space-between'} height={'100%'}>
-        <TableContainer whiteSpace={'wrap'} width={'100%'}>
-          <HStack justifyContent={'space-between'}>
+      <VStack height={'100%'} spacing={0}>
+        <HStack w={'100%'} flexShrink={0} pb={2}>
+          <Box flex={1}>
             <Button colorScheme={'green'} onClick={newSongModal.onOpen}>+ New Song</Button>
+          </Box>
+          <Center flex={1}>
+            <DebouncedInput
+              value={(table.getColumn('title')?.getFilterValue() ?? '') as string}
+              onChange={value => table.getColumn('title')?.setFilterValue(value)}
+              placeholder="Search..."
+              w={'300px'}
+              textAlign={'center'}
+            />
+          </Center>
+          <Box flex={1} display={'flex'} justifyContent={'flex-end'}>
             <Menu>
-              <MenuButton as={Button} rightIcon={<TriangleDownIcon />}>
+              <MenuButton as={Button} rightIcon={<TriangleDownIcon/>}>
                 Library Actions...
               </MenuButton>
               <MenuList>
-                <MenuItem icon={<CiImport />} onClick={importDirectory}>Import Directory...</MenuItem>
+                <MenuItem icon={<CiImport/>} onClick={importDirectory}>Import Directory...</MenuItem>
                 <Tooltip label="Make sure every song exists at the given location." openDelay={1000}>
-                  <MenuItem icon={<GrValidate />} onClick={validateLibrary}>Validate Library</MenuItem>
+                  <MenuItem icon={<GrValidate/>} onClick={validateLibrary}>Validate Library</MenuItem>
                 </Tooltip>
               </MenuList>
             </Menu>
-          </HStack>
-          <Table variant="simple">
-            <Thead>
+          </Box>
+        </HStack>
+        <Box flex={1} overflowY={'auto'} width={'100%'}>
+          <Table variant="simple" width={'100%'}>
+            <Thead position={'sticky'} top={0} zIndex={1} bg={'chakra-body-bg'}>
               {table.getHeaderGroups().map((headerGroup) => (
                 <Tr key={headerGroup.id}>
                   {headerGroup.headers.map((header) => {
-                    // see https://tanstack.com/table/v8/docs/api/core/column-def#meta to type this correctly
                     const meta: any = header.column.columnDef.meta;
                     return (
                       <Th
                         key={header.id}
                         isNumeric={meta?.isNumeric}
                       >
-                        <VStack alignItems={'flex-start'}>
-                          <Box
-                            userSelect={'none'}
-                            onClick={header.column.getToggleSortingHandler()}>
-                            {flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
+                        <Box
+                          userSelect={'none'}
+                          onClick={header.column.getToggleSortingHandler()}>
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
 
-                            <chakra.span pl="4">
-                              {header.column.getIsSorted() ? (
-                                header.column.getIsSorted() === 'desc' ? (
-                                  <TriangleDownIcon aria-label="sorted descending" />
-                                ) : (
-                                  <TriangleUpIcon aria-label="sorted ascending" />
-                                )
-                              ) : null}
-                            </chakra.span>
-                          </Box>
-                          {header.column.getCanFilter() ? (
-                            <div>
-                              <Filter column={header.column} />
-                            </div>
-                          ) : null}
-                        </VStack>
+                          <chakra.span pl="4">
+                            {header.column.getIsSorted() ? (
+                              header.column.getIsSorted() === 'desc' ? (
+                                <TriangleDownIcon aria-label="sorted descending"/>
+                              ) : (
+                                <TriangleUpIcon aria-label="sorted ascending"/>
+                              )
+                            ) : null}
+                          </chakra.span>
+                        </Box>
                       </Th>
                     );
                   })}
                 </Tr>
               ))}
             </Thead>
-            <Tbody overflowY={'scroll'} height={'50'}>
+            <Tbody>
               {table.getRowModel().rows.map((row) => (
                 <Tr key={row.id}>
                   {row.getVisibleCells().map((cell) => {
-                    // see https://tanstack.com/table/v8/docs/api/core/column-def#meta to type this correctly
                     const meta: any = cell.column.columnDef.meta;
                     return (
                       <Td key={cell.id} isNumeric={meta?.isNumeric}>
@@ -378,77 +380,14 @@ export const Songs = () => {
               ))}
             </Tbody>
           </Table>
-          <HStack gap={'15px'} justifyContent={'center'}>
-            <Button
-              onClick={() => table.setPageIndex(0)}
-              isDisabled={!table.getCanPreviousPage()}
-            >
-              {'<<'}
-            </Button>
-            <Button
-              onClick={() => table.previousPage()}
-              isDisabled={!table.getCanPreviousPage()}
-            >
-              {'<'}
-            </Button>
-            <Button
-              onClick={() => {
-                table.nextPage();
-              }}
-              isDisabled={!table.getCanNextPage()}
-            >
-              {'>'}
-            </Button>
-            <Button
-              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
-              isDisabled={!table.getCanNextPage()}
-            >
-              {'>>'}
-            </Button>
-            <Center gap={'5px'}>
-              <Text>Page</Text>
-              <strong>
-                {table.getState().pagination.pageIndex + 1} of{' '}
-                {table.getPageCount()}
-              </strong>
-            </Center>
-            <Center height="20px">
-              <Divider orientation="vertical" />
-            </Center>
-            <Center gap={'5px'}>
-              Go to page:
-              <Input
-                width={'100px'}
-                type="number"
-                defaultValue={table.getState().pagination.pageIndex + 1}
-                onChange={e => {
-                  const page = e.target.value ? Number(e.target.value) - 1 : 0;
-                  if (page >= 0 && page < table.getPageCount())
-                    table.setPageIndex(page);
-                }}
-              />
-            </Center>
-            <Select
-              width={'150px'}
-              value={table.getState().pagination.pageSize}
-              onChange={e => {
-                table.setPageSize(Number(e.target.value));
-              }}
-            >
-              {[10, 20, 30, 40, 50].map(pageSize => (
-                <option key={pageSize} value={pageSize}>
-                  Show {pageSize}
-                </option>
-              ))}
-            </Select>
-          </HStack>
-        </TableContainer>
+        </Box>
+        <TableControls table={table} />
       </VStack>
       <Modal isOpen={newSongModal.isOpen} onClose={newSongModal.onClose}>
-        <ModalOverlay />
+        <ModalOverlay/>
         <ModalContent>
           <ModalHeader>New Song</ModalHeader>
-          <ModalCloseButton />
+          <ModalCloseButton/>
           <ModalBody>
             <VStack gap={'5px'}>
               <>
@@ -459,10 +398,10 @@ export const Songs = () => {
                   <Text key={'title-label'}>Title</Text>
                   <Input key={'title-input'} value={newSong.title ?? ''}
                          onChange={(e) => {
-                           const newState = { ...newSong };
+                           const newState = {...newSong};
                            newState.title = e.target.value;
                            setNewSong(newState);
-                         }} />
+                         }}/>
                 </>
               )}
             </VStack>

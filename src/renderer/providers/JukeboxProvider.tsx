@@ -1,5 +1,5 @@
-import { createContext, useMemo } from 'react';
-import { useJukebox } from '../hooks/useJukebox';
+import {createContext} from 'react';
+import {useJukebox} from '../hooks/useJukebox';
 
 export const JukeboxContext = createContext({} as ReturnType<typeof useJukebox>);
 

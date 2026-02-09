@@ -1,8 +1,8 @@
-import { Button, HStack, Table, TableContainer, Tbody, Td, Th, Thead, Tr } from '@chakra-ui/react';
-import { useLiveQuery } from 'dexie-react-hooks';
+import {Button, HStack, Table, TableContainer, Tbody, Td, Th, Thead, Tr} from '@chakra-ui/react';
+import {useLiveQuery} from 'dexie-react-hooks';
 import React from 'react';
-import { Page } from '../common/Page';
-import { database } from '../database';
+import {Page} from '../common/Page';
+import {database} from '../database';
 
 export const PlaylistDetails = () => {
   const playlists = useLiveQuery(() => database.playlists.toArray());

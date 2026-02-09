@@ -1,11 +1,11 @@
-import { Button, HStack, Kbd, Progress, Text, useToast, VStack } from '@chakra-ui/react';
-import React, { useContext, useEffect, useState } from 'react';
-import { useInterval, useKeyPressEvent } from 'react-use';
-import { useHowl } from 'rehowl';
-import { UserSettingsContext } from '../providers/UserSettingsProvider';
-import { PitchShift, Player } from 'tone';
-import { confirmAction } from '../utils/ConfirmAction';
-import { JukeboxContext } from '../providers/JukeboxProvider';
+import {Button, HStack, Kbd, Progress, Text, useToast, VStack} from '@chakra-ui/react';
+import React, {useContext, useEffect, useState} from 'react';
+import {useInterval, useKeyPressEvent} from 'react-use';
+import {useHowl} from 'rehowl';
+import {UserSettingsContext} from '../providers/UserSettingsProvider';
+import {PitchShift, Player} from 'tone';
+import {confirmAction} from '../utils/ConfirmAction';
+import {JukeboxContext} from '../providers/JukeboxProvider';
 
 export type AudioPlayerHowlProps = {
   src: string;
@@ -35,16 +35,26 @@ export const AudioPlayer = (props: AudioPlayerHowlProps) => {
 
   useEffect(() => {
     window.electron.ipcRenderer.once('readAudioFile', async (event: any) => {
-      const ctx = new window.AudioContext();
-      const audioBuffer = await ctx.decodeAudioData(event.buffer);
-      const player = new Player(audioBuffer)
-      const pitchShift = new PitchShift()
-      player.connect(pitchShift)
-      pitchShift.toDestination()
-      setToneState({
-        player,
-        pitchShift
-      })
+      try {
+        const ctx = new window.AudioContext();
+        const audioBuffer = await ctx.decodeAudioData(event.buffer);
+        const player = new Player(audioBuffer)
+        const pitchShift = new PitchShift()
+        player.connect(pitchShift)
+        pitchShift.toDestination()
+        setToneState({
+          player,
+          pitchShift
+        })
+      } catch (error) {
+        toast({
+          title: 'Error decoding audio',
+          description: String(error),
+          status: 'error',
+          duration: 4000,
+          isClosable: true
+        })
+      }
     })
 
     window.electron.ipcRenderer.sendMessage('readAudioFile', props.src)
@@ -56,10 +66,6 @@ export const AudioPlayer = (props: AudioPlayerHowlProps) => {
       toneState.pitchShift.pitch = shiftToSemitones(rate)
     }
   }, [rate]);
-
-  useEffect(() => {
-    console.log('jukebox props', props)
-  }, []);
 
   useEffect(() => {
     if (howl) {
@@ -79,6 +85,11 @@ export const AudioPlayer = (props: AudioPlayerHowlProps) => {
         setStartTime(undefined)
         setIsPlaying(false)
       });
+
+      return () => {
+        howl.off("load");
+        howl.off("end");
+      };
     }
   }, [howl]);
 
@@ -97,12 +108,9 @@ export const AudioPlayer = (props: AudioPlayerHowlProps) => {
   const handlePlayPause = () => {
     // blur play-pause button
     document.getElementById('play-pause-button')?.blur();
-    console.log('howl playing', howl?.playing())
     if (howl?.playing()) {
-      console.log('showmode', props.showMode)
       if (props.showMode) {
         confirmAction('We are running a show! Are you sure you want to pause?', () => {
-          console.log('confirmed')
           howl?.pause()
           setIsPlaying(false)
         })()

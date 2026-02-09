@@ -1,5 +1,5 @@
-import { Page } from '../common/Page';
-import { Card, CardBody, Center, Text } from '@chakra-ui/react';
+import {Page} from '../common/Page';
+import {Card, CardBody, Center, Text} from '@chakra-ui/react';
 
 export const Home = () => {
   return (

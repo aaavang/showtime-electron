@@ -1,6 +1,6 @@
-import { Button, HStack, Kbd, Progress, useToast, VStack, Text, Tooltip } from '@chakra-ui/react';
-import { useState } from 'react';
-import { useAudio, useInterval, useKeyPressEvent } from 'react-use';
+import {Button, HStack, Kbd, Progress, Text, Tooltip, useToast, VStack} from '@chakra-ui/react';
+import {useState} from 'react';
+import {useAudio, useInterval, useKeyPressEvent} from 'react-use';
 
 export const AudioPlayer = (props: any) => {
   const toast = useToast();

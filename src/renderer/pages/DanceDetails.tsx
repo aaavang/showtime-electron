@@ -1,9 +1,12 @@
-import { ChevronDownIcon, MenuButton } from '@chakra-ui/icons';
+import {ChevronDownIcon, MenuButton} from '@chakra-ui/icons';
 import {
   Badge,
   Button,
   Heading,
-  HStack, Menu, MenuItem, MenuList,
+  HStack,
+  Menu,
+  MenuItem,
+  MenuList,
   Table,
   TableContainer,
   Tbody,
@@ -14,14 +17,14 @@ import {
   useToast,
   VStack
 } from '@chakra-ui/react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import React, { useCallback, useContext, useState } from 'react';
-import { MdAppRegistration, MdDelete, MdStar } from 'react-icons/md';
-import { useParams } from 'react-router-dom';
-import { Page } from '../common/Page';
-import { DanceVariant, database } from '../database';
-import { useDanceVariantModal } from '../hooks/DanceVariantModal';
-import { JukeboxContext } from '../providers/JukeboxProvider';
+import {useLiveQuery} from 'dexie-react-hooks';
+import React, {useCallback, useContext, useState} from 'react';
+import {MdAppRegistration, MdDelete, MdStar} from 'react-icons/md';
+import {useParams} from 'react-router-dom';
+import {Page} from '../common/Page';
+import {DanceVariant, database} from '../database';
+import {useDanceVariantModal} from '../hooks/DanceVariantModal';
+import {JukeboxContext} from '../providers/JukeboxProvider';
 
 export const DanceDetails = () => {
   const toast = useToast();

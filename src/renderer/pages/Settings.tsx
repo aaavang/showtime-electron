@@ -1,8 +1,7 @@
-import { FormLabel } from '@chakra-ui/icons';
-import { Card, CardBody, Checkbox, FormControl, HStack, Text, useColorMode } from '@chakra-ui/react';
-import { useContext } from 'react';
-import { Page } from '../common/Page';
-import { UserSettingsContext } from '../providers/UserSettingsProvider';
+import {Card, CardBody, Checkbox, FormControl, HStack, Text, useColorMode} from '@chakra-ui/react';
+import {useContext} from 'react';
+import {Page} from '../common/Page';
+import {UserSettingsContext} from '../providers/UserSettingsProvider';
 
 export const Settings = () => {
   const [userSettings, setUserSettings] = useContext(UserSettingsContext);

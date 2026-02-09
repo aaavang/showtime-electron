@@ -11,11 +11,11 @@ import {
   useDisclosure,
   VStack
 } from '@chakra-ui/react';
-import { useLiveQuery } from 'dexie-react-hooks';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {useLiveQuery} from 'dexie-react-hooks';
+import React, {useState} from 'react';
 import AsyncSelect from 'react-select/async';
-import { Dance, DanceVariant, database, Song } from '../database';
-import { Option } from '../types/Option';
+import {Dance, DanceVariant, database, Song} from '../database';
+import {Option} from '../types/Option';
 
 export type SelectDanceModalProps = {
   onSubmit: (data: HydratedDanceVariant) => void;

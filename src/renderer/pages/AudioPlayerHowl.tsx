@@ -1,10 +1,10 @@
-import { Button, HStack, Kbd, Progress, Text, useToast, VStack } from '@chakra-ui/react';
-import React, { useContext, useEffect, useState } from 'react';
-import { useInterval, useKeyPressEvent } from 'react-use';
-import { useHowl } from 'rehowl';
-import { UserSettingsContext } from '../providers/UserSettingsProvider';
-import { confirmAction } from '../utils/ConfirmAction';
-import { JukeboxContext } from '../providers/JukeboxProvider';
+import {Button, HStack, Kbd, Progress, Text, useToast, VStack} from '@chakra-ui/react';
+import React, {useContext, useEffect, useState} from 'react';
+import {useInterval, useKeyPressEvent} from 'react-use';
+import {useHowl} from 'rehowl';
+import {UserSettingsContext} from '../providers/UserSettingsProvider';
+import {confirmAction} from '../utils/ConfirmAction';
+import {JukeboxContext} from '../providers/JukeboxProvider';
 
 export type AudioPlayerHowlProps = {
   src: string;

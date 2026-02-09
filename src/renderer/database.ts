@@ -1,4 +1,4 @@
-import Dexie, { EntityTable } from 'dexie';
+import Dexie, {EntityTable} from 'dexie';
 
 export type Song = {
   id: number;
@@ -51,4 +51,5 @@ database.version(1).stores({
 
 database.open().catch(function(error){
   console.error("ERROR: "+ error);
+  alert("Failed to open database: " + error);
 });
