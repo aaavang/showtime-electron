@@ -167,8 +167,7 @@ export function Playlists() {
   };
 
   const loadPlaylist = async (playlist: Playlist) => {
-    localStorage.setItem('tracks', playlist.tracksString);
-    navigate('/');
+    navigate('/', { state: { playlistId: playlist.id } });
     toast({
       title: 'Success',
       description: `Playlist loaded - ${playlist.title}`,

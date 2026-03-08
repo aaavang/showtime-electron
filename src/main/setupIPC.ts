@@ -1,10 +1,14 @@
-import { dialog, ipcMain, net } from 'electron';
+import { app, dialog, ipcMain, net } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import os from 'node:os';
 import { Song } from '../renderer/database';
 
 export const setupIPC = () => {
+  ipcMain.on('getAppPath', (event) => {
+    event.returnValue = app.getAppPath();
+  });
+
   ipcMain.on('getPlatform', async (event, _arg) => {
     event.reply('getPlatform', os.platform());
   });

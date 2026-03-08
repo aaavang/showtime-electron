@@ -26,7 +26,8 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { useLiveQuery } from 'dexie-react-hooks';
-import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
   MdCleaningServices,
   MdFileOpen,
@@ -48,10 +49,12 @@ import { useSelectPlaylistModal } from '../hooks/SelectPlaylistModal';
 import { JukeboxState } from '../hooks/useJukebox';
 import { useSongPathEncoder } from '../hooks/useSongPathEncoder';
 import { JukeboxContext } from '../providers/JukeboxProvider';
+import { confirmAction } from '../utils/ConfirmAction';
 import { UserSettingsContext } from '../providers/UserSettingsProvider';
 
 export function PracticeTime() {
   const toast = useToast();
+  const location = useLocation();
   const { jukeboxState, setJukeboxState } = useContext(JukeboxContext);
   const songPathEncoder = useSongPathEncoder();
   const [loaded, setLoaded] = useState(false);
@@ -64,6 +67,7 @@ export function PracticeTime() {
     useSelectPlaylistModal();
   const [changeVariantDisclosure, changeVariantRef, ChangeVariantModal] =
     useChangeVariantModal();
+  const [currentPlaylist, setCurrentPlaylist] = useState<Playlist | null>(null);
   const [showMode, setShowMode] = useState(false);
   const [userSettings] = useContext(UserSettingsContext);
   const [clickedRowNumber, setClickedRowNumber] = useState<number | null>(null);
@@ -93,11 +97,46 @@ export function PracticeTime() {
   }, [tracks]);
 
   useEffect(() => {
-    const storedTracks = localStorage.getItem('tracks');
-    if (storedTracks) {
-      setTracks(JSON.parse(storedTracks));
+    if (loaded) {
+      if (currentPlaylist) {
+        localStorage.setItem('currentPlaylistId', String(currentPlaylist.id));
+      } else {
+        localStorage.removeItem('currentPlaylistId');
+      }
     }
-    setLoaded(true);
+  }, [currentPlaylist, loaded]);
+
+  useEffect(() => {
+    const state = location.state as { playlistId?: number } | null;
+    if (state?.playlistId) {
+      database.playlists.get(state.playlistId).then((playlist) => {
+        if (playlist) {
+          hydratePlaylist(playlist).then((hydrated) => {
+            setTracks(hydrated);
+            setCurrentPlaylist(playlist);
+            setLoaded(true);
+          });
+        } else {
+          setLoaded(true);
+        }
+      });
+      // Clear the state so refreshing doesn't re-load
+      window.history.replaceState({}, '');
+    } else {
+      const storedTracks = localStorage.getItem('tracks');
+      if (storedTracks) {
+        setTracks(JSON.parse(storedTracks));
+      }
+      const storedPlaylistId = localStorage.getItem('currentPlaylistId');
+      if (storedPlaylistId) {
+        database.playlists.get(Number(storedPlaylistId)).then((playlist) => {
+          if (playlist) {
+            setCurrentPlaylist(playlist);
+          }
+        });
+      }
+      setLoaded(true);
+    }
   }, []);
 
   const liveDances = useLiveQuery(() => database.dances.toArray());
@@ -106,7 +145,7 @@ export function PracticeTime() {
 
   useEffect(() => {
     if (!loaded || !liveDances || !liveSongs || !liveVariants) return;
-    const current = tracksRef.current;
+    const { current } = tracksRef;
     if (current.length === 0) return;
 
     const danceMap = new Map(liveDances.map((d) => [d.id, d]));
@@ -128,7 +167,12 @@ export function PracticeTime() {
         variant.songId !== track.danceVariant.songId
       ) {
         changed = true;
-        return { ...track, dance, song: songMap.get(variant.songId) ?? song, danceVariant: variant };
+        return {
+          ...track,
+          dance,
+          song: songMap.get(variant.songId) ?? song,
+          danceVariant: variant,
+        };
       }
       return track;
     });
@@ -228,7 +272,7 @@ export function PracticeTime() {
             {!showMode && (
               <Button
                 variant="outline"
-                colorScheme={'yellow'}
+                colorScheme="yellow"
                 onClick={(e) => {
                   e.stopPropagation();
                   changeVariantRef.current = {
@@ -318,17 +362,80 @@ export function PracticeTime() {
 
   const savePlaylist = async (playlist: Playlist) => {
     playlist.tracksString = JSON.stringify(tracks);
-    await database.playlists.put(playlist);
+    const id = await database.playlists.put(playlist);
+    setCurrentPlaylist({ ...playlist, id });
+    toast({
+      title: `Playlist "${playlist.title}" saved`,
+      status: 'success',
+      duration: 2000,
+      isClosable: true,
+    });
   };
 
+  const quickSave = () => {
+    if (!currentPlaylist) {
+      savePlaylistModalDisclosure.onOpen();
+      return;
+    }
+    confirmAction(`Overwrite "${currentPlaylist.title}"?`, () =>
+      savePlaylist(currentPlaylist),
+    )();
+  };
+
+  const hydratePlaylist = useCallback(
+    async (playlist: Playlist): Promise<HydratedDanceVariant[]> => {
+      if (playlist.tracksString) {
+        return JSON.parse(playlist.tracksString);
+      }
+      // Playlist uses playlistDances table (e.g. seeded playlists)
+      const playlistDances = await database.playlistDances
+        .where('playlistId')
+        .equals(playlist.id)
+        .sortBy('order');
+
+      const hydrated: HydratedDanceVariant[] = [];
+      for (const pd of playlistDances) {
+        const variant = await database.danceVariants.get(pd.danceVariantId);
+        if (!variant) continue;
+        const dance = await database.dances.get(variant.danceId);
+        const song = await database.songs.get(variant.songId);
+        if (!dance || !song) continue;
+        hydrated.push({ dance, danceVariant: variant, song, autoplay: false });
+      }
+      return hydrated;
+    },
+    [],
+  );
+
   const loadPlaylist = async (playlist: Playlist) => {
-    const loadedTracks = JSON.parse(playlist.tracksString);
-    setTracks(loadedTracks);
+    const hydrated = await hydratePlaylist(playlist);
+    setTracks(hydrated);
+    setCurrentPlaylist(playlist);
   };
 
   const toggleShow = () => {
-    setShowMode(!showMode);
+    const enteringShowMode = !showMode;
+    setShowMode(enteringShowMode);
     setClickedRowNumber(null);
+
+    if (enteringShowMode && tracks.length > 0) {
+      const firstTrack = tracks[0];
+      setCurrentTrackIndex(0);
+      setJukeboxState({
+        showMode: true,
+        closeOnEnd: true,
+        onEnd: onPlaylistEnd,
+        showJukebox: true,
+        dance: firstTrack.dance,
+        variant: firstTrack.danceVariant,
+        song: firstTrack.song,
+        currentTrackIndex: 0,
+        playlist: tracks,
+        autoplay: firstTrack.autoplay,
+      });
+    } else if (!enteringShowMode) {
+      setJukeboxState({ showJukebox: false });
+    }
   };
 
   const exportPlaylist = () => {
@@ -404,7 +511,13 @@ export function PracticeTime() {
   });
 
   return (
-    <Page name={showMode ? 'Showtime!' : 'Practice Time'}>
+    <Page
+      name={
+        showMode
+          ? 'Showtime!'
+          : `Practice Time${currentPlaylist ? ` - ${currentPlaylist.title}` : ''}`
+      }
+    >
       <VStack height="100%" spacing={0} ref={tableRef}>
         <HStack w="100%" flexShrink={0} pb={2} justifyContent="space-between">
           <Flex flexGrow={1}>
@@ -432,11 +545,17 @@ export function PracticeTime() {
                   </MenuItem>
                 )}
                 {!showMode && (
+                  <MenuItem icon={<MdSave />} onClick={quickSave}>
+                    Save
+                    {currentPlaylist ? ` "${currentPlaylist.title}"` : '...'}
+                  </MenuItem>
+                )}
+                {!showMode && (
                   <MenuItem
                     icon={<MdSave />}
                     onClick={savePlaylistModalDisclosure.onOpen}
                   >
-                    Save...
+                    Save As...
                   </MenuItem>
                 )}
                 {!showMode && (
@@ -447,7 +566,10 @@ export function PracticeTime() {
                 {!showMode && (
                   <MenuItem
                     icon={<MdCleaningServices />}
-                    onClick={() => setTracks([])}
+                    onClick={() => {
+                      setTracks([]);
+                      setCurrentPlaylist(null);
+                    }}
                   >
                     Clear
                   </MenuItem>
@@ -467,13 +589,14 @@ export function PracticeTime() {
                     Clear Autoplay
                   </MenuItem>
                 )}
-                <MenuGroup title="Showtime">
-                  <MenuItem onClick={toggleShow}>
-                    {showMode ? 'Stop show' : 'Run show!'}
-                  </MenuItem>
-                </MenuGroup>
               </MenuList>
             </Menu>
+            <Button
+              colorScheme={showMode ? 'red' : 'purple'}
+              onClick={toggleShow}
+            >
+              {showMode ? 'Stop Show' : 'Run Show!'}
+            </Button>
           </>
         </HStack>
         <Box flex={1} overflowY="auto" width="100%">

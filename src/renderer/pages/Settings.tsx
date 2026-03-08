@@ -32,7 +32,12 @@ export function Settings() {
       await seedDatabase();
       toast({ title: 'Database seeded', status: 'success', duration: 2000 });
     } catch (e: any) {
-      toast({ title: 'Seed failed', description: e.message, status: 'error', duration: 4000 });
+      toast({
+        title: 'Seed failed',
+        description: e.message,
+        status: 'error',
+        duration: 4000,
+      });
     } finally {
       setSeeding(false);
     }
@@ -44,7 +49,12 @@ export function Settings() {
       await clearDatabase();
       toast({ title: 'Database cleared', status: 'success', duration: 2000 });
     } catch (e: any) {
-      toast({ title: 'Clear failed', description: e.message, status: 'error', duration: 4000 });
+      toast({
+        title: 'Clear failed',
+        description: e.message,
+        status: 'error',
+        duration: 4000,
+      });
     } finally {
       setClearing(false);
     }

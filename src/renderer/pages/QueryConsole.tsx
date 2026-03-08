@@ -59,9 +59,7 @@ function parseQuery(sql: string): {
 } {
   const trimmed = sql.trim().replace(/;$/, '');
 
-  const selectMatch = trimmed.match(
-    /^SELECT\s+(.+?)\s+FROM\s+(\w+)(.*)/i,
-  );
+  const selectMatch = trimmed.match(/^SELECT\s+(.+?)\s+FROM\s+(\w+)(.*)/i);
   if (!selectMatch) {
     throw new Error(
       'Unsupported syntax. Use: SELECT * FROM table [WHERE ...] [ORDER BY ...] [LIMIT n]',
@@ -73,9 +71,7 @@ function parseQuery(sql: string): {
   let rest = selectMatch[3].trim();
 
   const columns: string[] | '*' =
-    columnsRaw === '*'
-      ? '*'
-      : columnsRaw.split(',').map((c) => c.trim());
+    columnsRaw === '*' ? '*' : columnsRaw.split(',').map((c) => c.trim());
 
   // Parse LIMIT (extract first so it doesn't interfere with ORDER BY parsing)
   let limit: number | null = null;
@@ -87,9 +83,7 @@ function parseQuery(sql: string): {
 
   // Parse ORDER BY
   let orderBy: { column: string; desc: boolean } | null = null;
-  const orderMatch = rest.match(
-    /\bORDER\s+BY\s+(\w+)(\s+(ASC|DESC))?/i,
-  );
+  const orderMatch = rest.match(/\bORDER\s+BY\s+(\w+)(\s+(ASC|DESC))?/i);
   if (orderMatch) {
     orderBy = {
       column: orderMatch[1],
@@ -116,7 +110,9 @@ function parseWhereClause(
 
   const orPredicates = orParts.map((orPart) => {
     const andParts = orPart.split(/\s+AND\s+/i);
-    const andPredicates = andParts.map((part) => parseSingleCondition(part.trim()));
+    const andPredicates = andParts.map((part) =>
+      parseSingleCondition(part.trim()),
+    );
     return (row: Record<string, unknown>) =>
       andPredicates.every((pred) => pred(row));
   });
@@ -132,9 +128,7 @@ function parseSingleCondition(
   const likeMatch = condition.match(/^(\w+)\s+LIKE\s+'(.*)'/i);
   if (likeMatch) {
     const col = likeMatch[1];
-    const pattern = likeMatch[2]
-      .replace(/%/g, '.*')
-      .replace(/_/g, '.');
+    const pattern = likeMatch[2].replace(/%/g, '.*').replace(/_/g, '.');
     const regex = new RegExp(`^${pattern}$`, 'i');
     return (row) => regex.test(String(row[col] ?? ''));
   }
@@ -143,9 +137,7 @@ function parseSingleCondition(
   const notLikeMatch = condition.match(/^(\w+)\s+NOT\s+LIKE\s+'(.*)'/i);
   if (notLikeMatch) {
     const col = notLikeMatch[1];
-    const pattern = notLikeMatch[2]
-      .replace(/%/g, '.*')
-      .replace(/_/g, '.');
+    const pattern = notLikeMatch[2].replace(/%/g, '.*').replace(/_/g, '.');
     const regex = new RegExp(`^${pattern}$`, 'i');
     return (row) => !regex.test(String(row[col] ?? ''));
   }
@@ -171,11 +163,7 @@ function parseSingleCondition(
     let val: unknown = compMatch[3];
 
     // Parse value type
-    if (
-      typeof val === 'string' &&
-      val.startsWith("'") &&
-      val.endsWith("'")
-    ) {
+    if (typeof val === 'string' && val.startsWith("'") && val.endsWith("'")) {
       val = (val as string).slice(1, -1);
     } else if (val === 'true') {
       val = true;
@@ -237,7 +225,9 @@ function parseUpdateQuery(sql: string): {
     throw new Error('Cannot parse SET clause');
   }
   for (const assignment of assignments) {
-    const eqMatch = assignment.match(/^(\w+)\s*=\s*('.*?'|\d+(\.\d+)?|true|false)$/i);
+    const eqMatch = assignment.match(
+      /^(\w+)\s*=\s*('.*?'|\d+(\.\d+)?|true|false)$/i,
+    );
     if (!eqMatch) {
       throw new Error(`Cannot parse assignment: "${assignment}"`);
     }
@@ -298,8 +288,7 @@ async function executeQuery(sql: string): Promise<QueryResult> {
       throw new Error('Supported commands: SELECT, UPDATE, DELETE');
     }
 
-    const { tableName, columns, where, orderBy, limit } =
-      parseQuery(sql);
+    const { tableName, columns, where, orderBy, limit } = parseQuery(sql);
 
     const table = getTable(tableName);
     if (!table) {
@@ -331,8 +320,7 @@ async function executeQuery(sql: string): Promise<QueryResult> {
     // Project columns
     let resultColumns: string[];
     if (columns === '*') {
-      resultColumns =
-        rows.length > 0 ? Object.keys(rows[0]) : ['(no results)'];
+      resultColumns = rows.length > 0 ? Object.keys(rows[0]) : ['(no results)'];
     } else {
       resultColumns = columns;
       rows = rows.map((row) => {
@@ -352,10 +340,7 @@ async function executeQuery(sql: string): Promise<QueryResult> {
   }
 }
 
-async function executeUpdate(
-  sql: string,
-  start: number,
-): Promise<QueryResult> {
+async function executeUpdate(sql: string, start: number): Promise<QueryResult> {
   const { tableName, sets, where } = parseUpdateQuery(sql);
 
   const table = getTable(tableName);
@@ -380,15 +365,14 @@ async function executeUpdate(
   const duration = performance.now() - start;
   return {
     columns: ['result'],
-    rows: [{ result: `${updatedCount} row${updatedCount !== 1 ? 's' : ''} updated` }],
+    rows: [
+      { result: `${updatedCount} row${updatedCount !== 1 ? 's' : ''} updated` },
+    ],
     duration,
   };
 }
 
-async function executeDelete(
-  sql: string,
-  start: number,
-): Promise<QueryResult> {
+async function executeDelete(sql: string, start: number): Promise<QueryResult> {
   const { tableName, where } = parseDeleteQuery(sql);
 
   const table = getTable(tableName);
@@ -409,7 +393,9 @@ async function executeDelete(
   const duration = performance.now() - start;
   return {
     columns: ['result'],
-    rows: [{ result: `${ids.length} row${ids.length !== 1 ? 's' : ''} deleted` }],
+    rows: [
+      { result: `${ids.length} row${ids.length !== 1 ? 's' : ''} deleted` },
+    ],
     duration,
   };
 }
@@ -488,8 +474,10 @@ export function QueryConsole() {
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {result.rows.map((row, i) => (
-                    <Tr key={i}>
+                  {result.rows.map((row) => (
+                    <Tr
+                      key={`row-${result.columns.map((c) => row[c]).join('-')}`}
+                    >
                       {result.columns.map((col) => (
                         <Td key={col} fontFamily="mono" fontSize="xs">
                           {formatValue(row[col])}
@@ -532,6 +520,7 @@ export function QueryConsole() {
 function formatValue(val: unknown): string {
   if (val === null || val === undefined) return 'NULL';
   if (typeof val === 'boolean') return val ? 'true' : 'false';
-  if (typeof val === 'string' && val.length > 80) return `${val.slice(0, 80)}...`;
+  if (typeof val === 'string' && val.length > 80)
+    return `${val.slice(0, 80)}...`;
   return String(val);
 }

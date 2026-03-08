@@ -9,6 +9,7 @@ import { UserSettingsContext } from '../renderer/providers/UserSettingsProvider'
 // Mock window.electron (preload API)
 beforeAll(() => {
   (window as any).electron = {
+    appPath: '/mock/app/path',
     ipcRenderer: {
       sendMessage: jest.fn(),
       on: jest.fn(() => jest.fn()),

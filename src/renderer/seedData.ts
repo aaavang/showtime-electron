@@ -1,19 +1,22 @@
 import { database, Song, Dance, DanceVariant, Playlist } from './database';
 
-const SEED_SONGS: Omit<Song, 'id'>[] = [
-  { title: 'Waltz of the Flowers', path: '/music/waltz-of-the-flowers.mp3' },
-  { title: 'Blue Danube', path: '/music/blue-danube.mp3' },
-  { title: 'Tango Por Una Cabeza', path: '/music/por-una-cabeza.mp3' },
-  { title: 'La Cumparsita', path: '/music/la-cumparsita.mp3' },
-  { title: 'Libertango', path: '/music/libertango.mp3' },
-  { title: 'Sway', path: '/music/sway.mp3' },
-  { title: 'Fly Me to the Moon', path: '/music/fly-me-to-the-moon.mp3' },
-  { title: 'Mambo No. 5', path: '/music/mambo-no-5.mp3' },
-  { title: 'Rumba Suite', path: '/music/rumba-suite.mp3' },
-  { title: 'El Choclo', path: '/music/el-choclo.mp3' },
-  { title: 'Espana Cani', path: '/music/espana-cani.mp3' },
-  { title: 'Take the Lead', path: '/music/take-the-lead.mp3' },
-];
+function getTestTunesDir() {
+  return `${window.electron.appPath}/test-tunes`;
+}
+
+function getSeedSongs(): Omit<Song, 'id'>[] {
+  const dir = getTestTunesDir();
+  return [
+    { title: 'Track 1', path: `${dir}/track1.mp3` },
+    { title: 'Track 2', path: `${dir}/track2.mp3` },
+    { title: 'Track 3', path: `${dir}/track3.mp3` },
+    { title: 'Hearty Irish Jig', path: `${dir}/alanajordan-hearty-irish-jig-251678.mp3` },
+    { title: 'Irish Dance Jig', path: `${dir}/alban_gogh-irish-dance-jig-199572.mp3` },
+    { title: 'Round of Fairies', path: `${dir}/alban_gogh-the-round-of-fairies-irish-harp-211192.mp3` },
+    { title: 'Naughty Princess', path: `${dir}/ebunny-naughty-princess-354024.mp3` },
+    { title: 'Irish Jig', path: `${dir}/musictown-irish-jig-99533.mp3` },
+  ];
+}
 
 const SEED_DANCES: Omit<Dance, 'id'>[] = [
   { title: 'Waltz' },
@@ -21,8 +24,6 @@ const SEED_DANCES: Omit<Dance, 'id'>[] = [
   { title: 'Foxtrot' },
   { title: 'Cha Cha' },
   { title: 'Rumba' },
-  { title: 'Paso Doble' },
-  { title: 'Samba' },
   { title: 'Jive' },
 ];
 
@@ -34,17 +35,72 @@ type VariantDef = {
 };
 
 const SEED_VARIANTS: VariantDef[] = [
-  { title: 'Classic', danceName: 'Waltz', songTitle: 'Waltz of the Flowers', defaultVariant: true },
-  { title: 'Blue Danube', danceName: 'Waltz', songTitle: 'Blue Danube', defaultVariant: false },
-  { title: 'Classic', danceName: 'Tango', songTitle: 'Tango Por Una Cabeza', defaultVariant: true },
-  { title: 'La Cumparsita', danceName: 'Tango', songTitle: 'La Cumparsita', defaultVariant: false },
-  { title: 'Libertango', danceName: 'Tango', songTitle: 'Libertango', defaultVariant: false },
-  { title: 'Classic', danceName: 'Foxtrot', songTitle: 'Fly Me to the Moon', defaultVariant: true },
-  { title: 'Classic', danceName: 'Cha Cha', songTitle: 'Sway', defaultVariant: true },
-  { title: 'Classic', danceName: 'Rumba', songTitle: 'Rumba Suite', defaultVariant: true },
-  { title: 'Classic', danceName: 'Paso Doble', songTitle: 'Espana Cani', defaultVariant: true },
-  { title: 'Classic', danceName: 'Samba', songTitle: 'Mambo No. 5', defaultVariant: true },
-  { title: 'Classic', danceName: 'Jive', songTitle: 'Take the Lead', defaultVariant: true },
+  {
+    title: 'Classic',
+    danceName: 'Waltz',
+    songTitle: 'Round of Fairies',
+    defaultVariant: true,
+  },
+  {
+    title: 'Alternate',
+    danceName: 'Waltz',
+    songTitle: 'Naughty Princess',
+    defaultVariant: false,
+  },
+  {
+    title: 'Classic',
+    danceName: 'Tango',
+    songTitle: 'Track 1',
+    defaultVariant: true,
+  },
+  {
+    title: 'Alternate',
+    danceName: 'Tango',
+    songTitle: 'Track 2',
+    defaultVariant: false,
+  },
+  {
+    title: 'Classic',
+    danceName: 'Foxtrot',
+    songTitle: 'Hearty Irish Jig',
+    defaultVariant: true,
+  },
+  {
+    title: 'Alternate',
+    danceName: 'Foxtrot',
+    songTitle: 'Track 3',
+    defaultVariant: false,
+  },
+  {
+    title: 'Classic',
+    danceName: 'Cha Cha',
+    songTitle: 'Irish Dance Jig',
+    defaultVariant: true,
+  },
+  {
+    title: 'Alternate',
+    danceName: 'Cha Cha',
+    songTitle: 'Irish Jig',
+    defaultVariant: false,
+  },
+  {
+    title: 'Classic',
+    danceName: 'Rumba',
+    songTitle: 'Naughty Princess',
+    defaultVariant: true,
+  },
+  {
+    title: 'Classic',
+    danceName: 'Jive',
+    songTitle: 'Irish Jig',
+    defaultVariant: true,
+  },
+  {
+    title: 'Alternate',
+    danceName: 'Jive',
+    songTitle: 'Hearty Irish Jig',
+    defaultVariant: false,
+  },
 ];
 
 type PlaylistDef = {
@@ -54,12 +110,12 @@ type PlaylistDef = {
 
 const SEED_PLAYLISTS: PlaylistDef[] = [
   {
-    title: 'Competition Night',
-    danceNames: ['Waltz', 'Tango', 'Foxtrot', 'Cha Cha', 'Rumba'],
+    title: 'Full Practice',
+    danceNames: ['Waltz', 'Tango', 'Foxtrot', 'Cha Cha', 'Rumba', 'Jive'],
   },
   {
     title: 'Latin Showcase',
-    danceNames: ['Cha Cha', 'Samba', 'Rumba', 'Paso Doble', 'Jive'],
+    danceNames: ['Cha Cha', 'Rumba', 'Jive'],
   },
   {
     title: 'Quick Practice',
@@ -68,17 +124,16 @@ const SEED_PLAYLISTS: PlaylistDef[] = [
 ];
 
 export async function seedDatabase(): Promise<void> {
-  const songIds = await database.songs.bulkAdd(
-    SEED_SONGS as Song[],
-    { allKeys: true },
-  );
+  const seedSongs = getSeedSongs();
+  const songIds = await database.songs.bulkAdd(seedSongs as Song[], {
+    allKeys: true,
+  });
   const songIdByTitle = new Map<string, number>();
-  SEED_SONGS.forEach((s, i) => songIdByTitle.set(s.title, songIds[i]));
+  seedSongs.forEach((s, i) => songIdByTitle.set(s.title, songIds[i]));
 
-  const danceIds = await database.dances.bulkAdd(
-    SEED_DANCES as Dance[],
-    { allKeys: true },
-  );
+  const danceIds = await database.dances.bulkAdd(SEED_DANCES as Dance[], {
+    allKeys: true,
+  });
   const danceIdByTitle = new Map<string, number>();
   SEED_DANCES.forEach((d, i) => danceIdByTitle.set(d.title, danceIds[i]));
 
@@ -119,7 +174,13 @@ export async function seedDatabase(): Promise<void> {
 export async function clearDatabase(): Promise<void> {
   await database.transaction(
     'rw',
-    [database.playlistDances, database.playlists, database.danceVariants, database.dances, database.songs],
+    [
+      database.playlistDances,
+      database.playlists,
+      database.danceVariants,
+      database.dances,
+      database.songs,
+    ],
     async () => {
       await database.playlistDances.clear();
       await database.playlists.clear();

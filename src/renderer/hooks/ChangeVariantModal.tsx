@@ -30,11 +30,17 @@ export type ChangeVariantHookProps = {
 
 export const useChangeVariantModal = (): [
   ReturnType<typeof useDisclosure>,
-  React.MutableRefObject<{ track: HydratedDanceVariant | null; rowIndex: number }>,
+  React.MutableRefObject<{
+    track: HydratedDanceVariant | null;
+    rowIndex: number;
+  }>,
   (props: ChangeVariantHookProps) => React.ReactNode,
 ] => {
   const disclosure = useDisclosure();
-  const ref = React.useRef<{ track: HydratedDanceVariant | null; rowIndex: number }>({
+  const ref = React.useRef<{
+    track: HydratedDanceVariant | null;
+    rowIndex: number;
+  }>({
     track: null,
     rowIndex: -1,
   });
@@ -58,7 +64,9 @@ const ChangeVariantModal: React.FC<ChangeVariantModalProps> = ({
   track,
   rowIndex,
 }) => {
-  const [selectedVariant, setSelectedVariant] = useState<DanceVariant | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<DanceVariant | null>(
+    null,
+  );
 
   useEffect(() => {
     if (disclosure.isOpen && track) {

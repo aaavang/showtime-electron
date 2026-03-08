@@ -11,6 +11,7 @@ export type Channels =
   | 'readAudioFile';
 
 const electronHandler = {
+  appPath: ipcRenderer.sendSync('getAppPath') as string,
   ipcRenderer: {
     sendMessage(channel: Channels, ...args: unknown[]) {
       ipcRenderer.send(channel, ...args);

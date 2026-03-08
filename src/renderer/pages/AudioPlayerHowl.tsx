@@ -7,9 +7,10 @@ import {
   useToast,
   VStack,
 } from '@chakra-ui/react';
-import React, { useContext, useEffect, useState } from 'react';
+import { Howl } from 'howler';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { useInterval, useKeyPressEvent } from 'react-use';
-import { useHowl } from 'rehowl';
+import { AudioCacheContext } from '../providers/AudioCacheProvider';
 import { UserSettingsContext } from '../providers/UserSettingsProvider';
 import { confirmAction } from '../utils/ConfirmAction';
 import { JukeboxContext } from '../providers/JukeboxProvider';
@@ -20,37 +21,94 @@ export type AudioPlayerHowlProps = {
   onEnd: () => void;
   initialFocusRef?: any;
   showMode?: boolean;
+  isPlayingRef?: React.MutableRefObject<boolean>;
 };
 
 export function AudioPlayer(props: AudioPlayerHowlProps) {
   const toast = useToast();
   const [userSettings] = useContext(UserSettingsContext);
   const { setJukeboxState } = useContext(JukeboxContext);
+  const audioCache = useContext(AudioCacheContext);
   const [isFading, setIsFading] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const { howl } = useHowl({
-    src: props.src,
-    html5: userSettings.useHTML5Audio,
-  });
+  const [howl, setHowl] = useState<Howl | null>(null);
+  const howlRef = useRef<{ howl: Howl; cached: boolean } | null>(null);
+
+  useEffect(() => {
+    // Stop previous howl before switching
+    if (howlRef.current) {
+      const prev = howlRef.current;
+      prev.howl.stop();
+      if (!prev.cached) {
+        prev.howl.unload();
+      }
+    }
+
+    const cached = audioCache.get(props.src);
+    if (cached) {
+      cached.stop();
+      cached.seek(0);
+      cached.volume(1);
+      howlRef.current = { howl: cached, cached: true };
+      setHowl(cached);
+    } else {
+      const newHowl = new Howl({
+        src: [props.src],
+        html5: userSettings.useHTML5Audio,
+      });
+      howlRef.current = { howl: newHowl, cached: false };
+      setHowl(newHowl);
+    }
+
+    return () => {
+      if (howlRef.current) {
+        howlRef.current.howl.stop();
+        if (!howlRef.current.cached) {
+          howlRef.current.howl.unload();
+        }
+        howlRef.current = null;
+      }
+    };
+  }, [props.src]);
+
+  useEffect(() => {
+    if (props.isPlayingRef) {
+      props.isPlayingRef.current = isPlaying;
+    }
+  }, [isPlaying]);
 
   useEffect(() => {
     if (howl) {
-      howl.on('load', () => {
+      const onLoad = () => {
         setCurrentTime(0);
         if (props.autoPlay && userSettings.enableFineGrainAutoplay) {
           howl.volume(1);
           howl.play();
           setIsPlaying(true);
         }
-      });
+      };
 
-      howl.on('end', () => {
+      const onEnd = () => {
         props.onEnd();
         setCurrentTime(0);
         setIsPlaying(false);
-      });
+      };
+
+      howl.on('load', onLoad);
+      howl.on('end', onEnd);
+
+      // If already loaded (preloaded), fire onLoad immediately
+      if (howl.state() === 'loaded') {
+        onLoad();
+      }
+
+      return () => {
+        howl.off('load', onLoad);
+        howl.off('end', onEnd);
+      };
     }
+    return undefined;
   }, [howl]);
 
   const handlePlayPause = () => {

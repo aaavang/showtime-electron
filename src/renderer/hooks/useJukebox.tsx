@@ -19,6 +19,7 @@ import React, {
 import { Dance, DanceVariant, Song } from '../database';
 import { AudioPlayer } from '../pages/AudioPlayerHowl';
 import { UserSettingsContext } from '../providers/UserSettingsProvider';
+import { confirmAction } from '../utils/ConfirmAction';
 import { HydratedDanceVariant } from './SelectDanceModal';
 import { useSongPathEncoder } from './useSongPathEncoder';
 
@@ -78,11 +79,12 @@ export const useJukebox = (): JukeboxReturnType => {
 function Jukebox({ state, setState, initialFocusRef }: JukeboxProps) {
   const [userSettings] = useContext(UserSettingsContext);
   const songPathEncoder = useSongPathEncoder();
+  const isPlayingRef = useRef(false);
   if (!state.showJukebox || !state.song) {
     return null;
   }
 
-  const nextDance = () => {
+  const doNextDance = () => {
     if (
       state.playlist &&
       state.currentTrackIndex! < state.playlist.length - 1
@@ -99,7 +101,7 @@ function Jukebox({ state, setState, initialFocusRef }: JukeboxProps) {
     }
   };
 
-  const previousDance = () => {
+  const doPreviousDance = () => {
     if (state.playlist && state.currentTrackIndex! > 0) {
       const previousSong = state.playlist[state.currentTrackIndex! - 1];
       setState({
@@ -113,24 +115,32 @@ function Jukebox({ state, setState, initialFocusRef }: JukeboxProps) {
     }
   };
 
+  const doClose = () => {
+    setState({ showJukebox: false });
+  };
+
+  const withShowModeGuard = (action: () => void) => {
+    if (state.showMode && isPlayingRef.current) {
+      confirmAction('We are running a show! Are you sure?', action)();
+    } else {
+      action();
+    }
+  };
+
   const onEnd = () => {
     if (state.playlist) {
       if (state.currentTrackIndex! < state.playlist.length - 1) {
-        nextDance();
+        doNextDance();
       } else {
         state.onEnd?.(state.song!);
         if (state.closeOnEnd) {
-          setState({
-            showJukebox: false,
-          });
+          doClose();
         }
       }
     } else {
       state.onEnd?.(state.song!);
       if (state.closeOnEnd) {
-        setState({
-          showJukebox: false,
-        });
+        doClose();
       }
     }
   };
@@ -141,11 +151,7 @@ function Jukebox({ state, setState, initialFocusRef }: JukeboxProps) {
         <IconButton
           aria-label="close"
           icon={<CloseIcon />}
-          onClick={() =>
-            setState({
-              showJukebox: false,
-            })
-          }
+          onClick={() => withShowModeGuard(doClose)}
         />
       </HStack>
       <>
@@ -160,7 +166,7 @@ function Jukebox({ state, setState, initialFocusRef }: JukeboxProps) {
               <Button
                 colorScheme="gray"
                 isDisabled={state.currentTrackIndex! < 1}
-                onClick={previousDance}
+                onClick={() => withShowModeGuard(doPreviousDance)}
               >
                 Previous
               </Button>
@@ -218,7 +224,7 @@ function Jukebox({ state, setState, initialFocusRef }: JukeboxProps) {
                 isDisabled={
                   state.currentTrackIndex! >= state.playlist.length - 1
                 }
-                onClick={nextDance}
+                onClick={() => withShowModeGuard(doNextDance)}
               >
                 Next
               </Button>
@@ -232,6 +238,7 @@ function Jukebox({ state, setState, initialFocusRef }: JukeboxProps) {
         autoPlay={userSettings.enableFineGrainAutoplay && state.autoplay}
         src={songPathEncoder(state.song)}
         onEnd={onEnd}
+        isPlayingRef={isPlayingRef}
       />
     </Box>
   );

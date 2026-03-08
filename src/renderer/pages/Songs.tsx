@@ -112,9 +112,8 @@ export function Songs() {
             <Button
               colorScheme="red"
               variant="outline"
-              onClick={confirmAction(
-                `Delete ${info.row.original.title}?`,
-                () => deleteSong(info.row.original.id),
+              onClick={confirmAction(`Delete ${info.row.original.title}?`, () =>
+                deleteSong(info.row.original.id),
               )}
             >
               Delete

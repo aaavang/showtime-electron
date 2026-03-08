@@ -1,49 +1,68 @@
 import { Howl } from 'howler';
 import { useContext, useEffect, useRef } from 'react';
 import { Song } from '../database';
+import { AudioCacheContext } from '../providers/AudioCacheProvider';
 import { UserSettingsContext } from '../providers/UserSettingsProvider';
 import { useSongPathEncoder } from './useSongPathEncoder';
 
 export function useAudioPreloader(songs: Song[]) {
   const [userSettings] = useContext(UserSettingsContext);
   const songPathEncoder = useSongPathEncoder();
-  const cacheRef = useRef<Map<number, Howl>>(new Map());
+  const audioCache = useContext(AudioCacheContext);
+  const localSrcsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     if (!userSettings.preloadAudio) {
-      // Setting disabled — unload everything
-      cacheRef.current.forEach((howl) => howl.unload());
-      cacheRef.current.clear();
-      return;
+      // Setting disabled — unload everything we preloaded
+      for (const src of localSrcsRef.current) {
+        const howl = audioCache.get(src);
+        if (howl) {
+          howl.unload();
+          audioCache.remove(src);
+        }
+      }
+      localSrcsRef.current.clear();
+      return undefined;
     }
 
-    const currentIds = new Set(songs.map((s) => s.id));
-    const cache = cacheRef.current;
+    const currentSrcs = new Set(songs.map((s) => songPathEncoder(s)));
 
     // Remove songs no longer in the list
-    for (const [id, howl] of cache) {
-      if (!currentIds.has(id)) {
-        howl.unload();
-        cache.delete(id);
+    for (const src of localSrcsRef.current) {
+      if (!currentSrcs.has(src)) {
+        const howl = audioCache.get(src);
+        if (howl) {
+          howl.unload();
+          audioCache.remove(src);
+        }
+        localSrcsRef.current.delete(src);
       }
     }
 
     // Preload new songs
     for (const song of songs) {
-      if (!cache.has(song.id)) {
+      const src = songPathEncoder(song);
+      if (!audioCache.get(src)) {
         const howl = new Howl({
-          src: [songPathEncoder(song)],
+          src: [src],
           html5: userSettings.useHTML5Audio,
           preload: true,
         });
-        cache.set(song.id, howl);
+        audioCache.set(src, howl);
+        localSrcsRef.current.add(src);
       }
     }
 
     return () => {
       // Cleanup on unmount
-      cache.forEach((howl) => howl.unload());
-      cache.clear();
+      for (const src of localSrcsRef.current) {
+        const howl = audioCache.get(src);
+        if (howl) {
+          howl.unload();
+          audioCache.remove(src);
+        }
+      }
+      localSrcsRef.current.clear();
     };
   }, [songs, userSettings.preloadAudio, userSettings.useHTML5Audio]);
 }

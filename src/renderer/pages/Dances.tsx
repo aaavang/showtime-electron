@@ -1,7 +1,4 @@
-import {
-  TriangleDownIcon,
-  TriangleUpIcon,
-} from '@chakra-ui/icons';
+import { TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
 import {
   Box,
   Button,
