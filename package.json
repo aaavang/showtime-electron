@@ -224,7 +224,7 @@
         "nsis",
         "zip"
       ],
-      "publisherName": "Alexander Aavang"
+      "legalTrademarks": "Alexander Aavang"
     },
     "linux": {
       "target": [
