@@ -355,7 +355,6 @@ export function AudioPlayer(props: AudioPlayerProps) {
       </HStack>
       {!props.showMode && (
         <HStack w="100%" justifyContent="space-between">
-          <pre>{`Rate: ${rate}x`}</pre>
           <Button
             id="decrease-rate"
             onClick={handleDecreaseRate}
@@ -363,6 +362,7 @@ export function AudioPlayer(props: AudioPlayerProps) {
           >
             Decrease Rate
           </Button>
+          <pre>{`Rate: ${rate}x`}</pre>
           <Button
             id="increase-rate"
             onClick={handleIncreaseRate}
