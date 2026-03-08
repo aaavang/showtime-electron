@@ -131,6 +131,46 @@ export const setupIPC = () => {
     }
   });
 
+  ipcMain.on('exportDatabase', async (event, arg) => {
+    try {
+      const { json } = arg;
+      const savePath = dialog.showSaveDialogSync({
+        message: 'Export database dump',
+        defaultPath: `showtime-backup.json`,
+        filters: [{ name: 'JSON', extensions: ['json'] }],
+      });
+
+      if (savePath) {
+        fs.writeFileSync(savePath, json, 'utf-8');
+        event.reply('exportDatabase', { path: savePath });
+      } else {
+        event.reply('exportDatabase', { cancelled: true });
+      }
+    } catch (error) {
+      event.reply('exportDatabase', { error: String(error) });
+    }
+  });
+
+  ipcMain.on('importDatabase', async (event) => {
+    try {
+      const paths = dialog.showOpenDialogSync({
+        message: 'Select a database dump file',
+        properties: ['openFile'],
+        filters: [{ name: 'JSON', extensions: ['json'] }],
+      });
+
+      if (!paths || paths.length === 0) {
+        event.reply('importDatabase', { cancelled: true });
+        return;
+      }
+
+      const content = fs.readFileSync(paths[0], 'utf-8');
+      event.reply('importDatabase', { json: content });
+    } catch (error) {
+      event.reply('importDatabase', { error: String(error) });
+    }
+  });
+
   ipcMain.on('validateLibrary', async (event, arg) => {
     try {
       const { songs } = arg as { songs: Song[] };

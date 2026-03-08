@@ -8,6 +8,8 @@ export type Channels =
   | 'validateLibrary'
   | 'getAudioFilesInDirectory'
   | 'exportPlaylist'
+  | 'exportDatabase'
+  | 'importDatabase'
   | 'readAudioFile';
 
 const electronHandler = {
