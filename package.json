@@ -30,7 +30,11 @@
     "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
     "test": "jest",
-    "version": "node -e \"const fs=require('fs'); const p=JSON.parse(fs.readFileSync('./release/app/package.json','utf8')); p.version=require('./package.json').version; fs.writeFileSync('./release/app/package.json', JSON.stringify(p,null,2)+'\\n');\" && git add release/app/package.json"
+    "version": "node -e \"const fs=require('fs'); const p=JSON.parse(fs.readFileSync('./release/app/package.json','utf8')); p.version=require('./package.json').version; fs.writeFileSync('./release/app/package.json', JSON.stringify(p,null,2)+'\\n');\" && git add release/app/package.json",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx,json,css,scss,md}": "prettier --write"
   },
   "browserslist": [],
   "prettier": {
@@ -149,9 +153,11 @@
     "fake-indexeddb": "^6.2.5",
     "file-loader": "^6.2.0",
     "html-webpack-plugin": "^5.5.3",
+    "husky": "^9.1.7",
     "identity-obj-proxy": "^3.0.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^30.2.0",
+    "lint-staged": "^16.3.2",
     "mini-css-extract-plugin": "^2.7.6",
     "prettier": "^3.0.3",
     "react-refresh": "^0.14.0",
