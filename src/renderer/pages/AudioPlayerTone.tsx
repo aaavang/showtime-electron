@@ -62,7 +62,11 @@ export function AudioPlayer(props: AudioPlayerProps) {
   };
 
   const buildPlayer = (audioBuffer: AudioBuffer): ToneState => {
-    const player = new GrainPlayer(audioBuffer);
+    const player = new GrainPlayer({
+      url: audioBuffer,
+      grainSize: 0.05,
+      overlap: 0.05,
+    });
     player.toDestination();
     return { player, duration: audioBuffer.duration };
   };
