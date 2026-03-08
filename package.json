@@ -223,7 +223,8 @@
       "target": [
         "nsis",
         "zip"
-      ]
+      ],
+      "publisherName": "Alexander Aavang"
     },
     "linux": {
       "target": [
