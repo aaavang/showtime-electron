@@ -1,4 +1,3 @@
-import { Howl } from 'howler';
 import { useContext, useEffect, useRef } from 'react';
 import { Song } from '../database';
 import { AudioCacheContext } from '../providers/AudioCacheProvider';
@@ -13,13 +12,8 @@ export function useAudioPreloader(songs: Song[]) {
 
   useEffect(() => {
     if (!userSettings.preloadAudio) {
-      // Setting disabled — unload everything we preloaded
       for (const src of localSrcsRef.current) {
-        const howl = audioCache.get(src);
-        if (howl) {
-          howl.unload();
-          audioCache.remove(src);
-        }
+        audioCache.remove(src);
       }
       localSrcsRef.current.clear();
       return undefined;
@@ -30,39 +24,46 @@ export function useAudioPreloader(songs: Song[]) {
     // Remove songs no longer in the list
     for (const src of localSrcsRef.current) {
       if (!currentSrcs.has(src)) {
-        const howl = audioCache.get(src);
-        if (howl) {
-          howl.unload();
-          audioCache.remove(src);
-        }
+        audioCache.remove(src);
         localSrcsRef.current.delete(src);
       }
     }
 
-    // Preload new songs
+    // Preload new songs via IPC
+    const unsubscribes: Array<() => void> = [];
     for (const song of songs) {
       const src = songPathEncoder(song);
       if (!audioCache.get(src)) {
-        const howl = new Howl({
-          src: [src],
-          html5: userSettings.useHTML5Audio,
-          preload: true,
-        });
-        audioCache.set(src, howl);
         localSrcsRef.current.add(src);
+        let unsubscribe: (() => void) | undefined;
+        const handler = async (event: any) => {
+          if (event.src !== src) return;
+          unsubscribe?.();
+          if (event.error) return;
+          try {
+            const ctx = new window.AudioContext();
+            const audioBuffer = await ctx.decodeAudioData(event.buffer);
+            audioCache.set(src, audioBuffer);
+          } catch {
+            // Silently skip failed preloads
+          }
+        };
+        unsubscribe = window.electron.ipcRenderer.on('readAudioFile', handler);
+        unsubscribes.push(unsubscribe);
+        window.electron.ipcRenderer.sendMessage('readAudioFile', src);
       }
     }
 
+    const srcsToCleanup = localSrcsRef.current;
+    const unsubs = unsubscribes;
     return () => {
-      // Cleanup on unmount
-      for (const src of localSrcsRef.current) {
-        const howl = audioCache.get(src);
-        if (howl) {
-          howl.unload();
-          audioCache.remove(src);
-        }
+      for (const unsub of unsubs) {
+        unsub();
       }
-      localSrcsRef.current.clear();
+      for (const src of srcsToCleanup) {
+        audioCache.remove(src);
+      }
+      srcsToCleanup.clear();
     };
-  }, [songs, userSettings.preloadAudio, userSettings.useHTML5Audio]);
+  }, [songs, userSettings.preloadAudio, audioCache, songPathEncoder]);
 }

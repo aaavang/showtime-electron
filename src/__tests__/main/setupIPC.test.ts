@@ -51,6 +51,7 @@ describe('readAudioFile', () => {
     const event = makeEvent();
     await handlers.readAudioFile(event, 123);
     expect(event.reply).toHaveBeenCalledWith('readAudioFile', {
+      src: 123,
       error: 'Invalid audio file path',
     });
   });
@@ -59,6 +60,7 @@ describe('readAudioFile', () => {
     const event = makeEvent();
     await handlers.readAudioFile(event, '/some/path.mp3');
     expect(event.reply).toHaveBeenCalledWith('readAudioFile', {
+      src: '/some/path.mp3',
       error: 'Invalid audio file path',
     });
   });
@@ -74,6 +76,7 @@ describe('readAudioFile', () => {
     const fetchArg = (net.fetch as jest.Mock).mock.calls.at(-1)[0] as string;
     expect(fetchArg.startsWith('file://')).toBe(true);
     expect(event.reply).toHaveBeenCalledWith('readAudioFile', {
+      src: 'showtime:///home/user/song.mp3',
       buffer: fakeBuffer,
     });
   });
@@ -83,6 +86,7 @@ describe('readAudioFile', () => {
     const event = makeEvent();
     await handlers.readAudioFile(event, 'showtime:///home/user/song.mp3');
     expect(event.reply).toHaveBeenCalledWith('readAudioFile', {
+      src: 'showtime:///home/user/song.mp3',
       error: expect.stringContaining('network error'),
     });
   });

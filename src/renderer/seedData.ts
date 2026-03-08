@@ -10,10 +10,22 @@ function getSeedSongs(): Omit<Song, 'id'>[] {
     { title: 'Track 1', path: `${dir}/track1.mp3` },
     { title: 'Track 2', path: `${dir}/track2.mp3` },
     { title: 'Track 3', path: `${dir}/track3.mp3` },
-    { title: 'Hearty Irish Jig', path: `${dir}/alanajordan-hearty-irish-jig-251678.mp3` },
-    { title: 'Irish Dance Jig', path: `${dir}/alban_gogh-irish-dance-jig-199572.mp3` },
-    { title: 'Round of Fairies', path: `${dir}/alban_gogh-the-round-of-fairies-irish-harp-211192.mp3` },
-    { title: 'Naughty Princess', path: `${dir}/ebunny-naughty-princess-354024.mp3` },
+    {
+      title: 'Hearty Irish Jig',
+      path: `${dir}/alanajordan-hearty-irish-jig-251678.mp3`,
+    },
+    {
+      title: 'Irish Dance Jig',
+      path: `${dir}/alban_gogh-irish-dance-jig-199572.mp3`,
+    },
+    {
+      title: 'Round of Fairies',
+      path: `${dir}/alban_gogh-the-round-of-fairies-irish-harp-211192.mp3`,
+    },
+    {
+      title: 'Naughty Princess',
+      path: `${dir}/ebunny-naughty-princess-354024.mp3`,
+    },
     { title: 'Irish Jig', path: `${dir}/musictown-irish-jig-99533.mp3` },
   ];
 }

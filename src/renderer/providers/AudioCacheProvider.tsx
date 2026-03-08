@@ -1,9 +1,8 @@
-import { Howl } from 'howler';
-import React, { createContext, useCallback, useRef } from 'react';
+import React, { createContext, useCallback, useMemo, useRef } from 'react';
 
 type AudioCacheContextType = {
-  get: (src: string) => Howl | undefined;
-  set: (src: string, howl: Howl) => void;
+  get: (src: string) => AudioBuffer | undefined;
+  set: (src: string, buffer: AudioBuffer) => void;
   remove: (src: string) => void;
   clear: () => void;
 };
@@ -20,14 +19,11 @@ export function AudioCacheProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const cacheRef = useRef<Map<string, Howl>>(new Map());
+  const cacheRef = useRef<Map<string, AudioBuffer>>(new Map());
 
-  const get = useCallback(
-    (src: string) => cacheRef.current.get(src),
-    [],
-  );
+  const get = useCallback((src: string) => cacheRef.current.get(src), []);
   const set = useCallback(
-    (src: string, howl: Howl) => cacheRef.current.set(src, howl),
+    (src: string, buffer: AudioBuffer) => cacheRef.current.set(src, buffer),
     [],
   );
   const remove = useCallback((src: string) => {
@@ -37,8 +33,13 @@ export function AudioCacheProvider({
     cacheRef.current.clear();
   }, []);
 
+  const value = useMemo(
+    () => ({ get, set, remove, clear }),
+    [get, set, remove, clear],
+  );
+
   return (
-    <AudioCacheContext.Provider value={{ get, set, remove, clear }}>
+    <AudioCacheContext.Provider value={value}>
       {children}
     </AudioCacheContext.Provider>
   );

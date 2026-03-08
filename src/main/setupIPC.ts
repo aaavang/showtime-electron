@@ -54,15 +54,18 @@ export const setupIPC = () => {
   ipcMain.on('readAudioFile', async (event, arg) => {
     try {
       if (typeof arg !== 'string' || !arg.startsWith('showtime://')) {
-        event.reply('readAudioFile', { error: 'Invalid audio file path' });
+        event.reply('readAudioFile', {
+          src: arg,
+          error: 'Invalid audio file path',
+        });
         return;
       }
       const filePath = path.normalize(arg.slice('showtime://'.length));
       const resp = await net.fetch(`file://${filePath}`);
       const buffer = await resp.arrayBuffer();
-      event.reply('readAudioFile', { buffer });
+      event.reply('readAudioFile', { src: arg, buffer });
     } catch (error) {
-      event.reply('readAudioFile', { error: String(error) });
+      event.reply('readAudioFile', { src: arg, error: String(error) });
     }
   });
 

@@ -3,14 +3,12 @@ import { useLocalStorage } from 'react-use';
 
 export type UserSettings = {
   enableFineGrainAutoplay: boolean;
-  useHTML5Audio: boolean;
   isWindows: boolean;
   preloadAudio: boolean;
 };
 
 const defaultUserSettings = {
   enableFineGrainAutoplay: false,
-  useHTML5Audio: false,
   isWindows: true,
   preloadAudio: false,
 };

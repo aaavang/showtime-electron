@@ -101,29 +101,6 @@ export function Settings() {
         <CardBody>
           <FormControl>
             <HStack gap="15px" alignItems="center" textAlign="center">
-              <Text>Use HTML5 Audio</Text>
-              <Checkbox
-                isChecked={userSettings.useHTML5Audio}
-                // isDisabled={true}
-                onChange={(e) => {
-                  setUserSettings({
-                    ...userSettings,
-                    useHTML5Audio: e.target.checked,
-                  });
-                }}
-              />
-            </HStack>
-            <Text fontSize="xs">
-              When enabled, Howler will use HTML5 audio. Disabled because it
-              introduces a bug where songs restart.
-            </Text>
-          </FormControl>
-        </CardBody>
-      </Card>
-      <Card>
-        <CardBody>
-          <FormControl>
-            <HStack gap="15px" alignItems="center" textAlign="center">
               <Text>Preload Audio</Text>
               <Checkbox
                 isChecked={userSettings.preloadAudio}

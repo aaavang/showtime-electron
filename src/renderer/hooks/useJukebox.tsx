@@ -17,7 +17,7 @@ import React, {
   useState,
 } from 'react';
 import { Dance, DanceVariant, Song } from '../database';
-import { AudioPlayer } from '../pages/AudioPlayerHowl';
+import { AudioPlayer } from '../pages/AudioPlayerTone';
 import { UserSettingsContext } from '../providers/UserSettingsProvider';
 import { confirmAction } from '../utils/ConfirmAction';
 import { HydratedDanceVariant } from './SelectDanceModal';
@@ -188,9 +188,6 @@ function Jukebox({ state, setState, initialFocusRef }: JukeboxProps) {
                   ? 'Enabled'
                   : 'Disabled'}
               </Badge>
-              {userSettings.useHTML5Audio && (
-                <Badge colorScheme="red">HTML5 Enabled</Badge>
-              )}
               {state.currentTrackIndex !== undefined && state.playlist && (
                 <Heading
                   as="h2"

@@ -6,7 +6,6 @@ import {
   Flex,
   HStack,
   Menu,
-  MenuGroup,
   MenuItem,
   MenuList,
   Table,
@@ -26,7 +25,14 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { useLiveQuery } from 'dexie-react-hooks';
-import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   MdCleaningServices,
@@ -107,36 +113,35 @@ export function PracticeTime() {
   }, [currentPlaylist, loaded]);
 
   useEffect(() => {
-    const state = location.state as { playlistId?: number } | null;
-    if (state?.playlistId) {
-      database.playlists.get(state.playlistId).then((playlist) => {
+    const init = async () => {
+      const routeState = location.state as { playlistId?: number } | null;
+      if (routeState?.playlistId) {
+        const playlist = await database.playlists.get(routeState.playlistId);
         if (playlist) {
-          hydratePlaylist(playlist).then((hydrated) => {
-            setTracks(hydrated);
-            setCurrentPlaylist(playlist);
-            setLoaded(true);
-          });
-        } else {
-          setLoaded(true);
+          const hydrated = await hydratePlaylist(playlist);
+          setTracks(hydrated);
+          setCurrentPlaylist(playlist);
         }
-      });
-      // Clear the state so refreshing doesn't re-load
-      window.history.replaceState({}, '');
-    } else {
-      const storedTracks = localStorage.getItem('tracks');
-      if (storedTracks) {
-        setTracks(JSON.parse(storedTracks));
-      }
-      const storedPlaylistId = localStorage.getItem('currentPlaylistId');
-      if (storedPlaylistId) {
-        database.playlists.get(Number(storedPlaylistId)).then((playlist) => {
+        // Clear the state so refreshing doesn't re-load
+        window.history.replaceState({}, '');
+      } else {
+        const storedTracks = localStorage.getItem('tracks');
+        if (storedTracks) {
+          setTracks(JSON.parse(storedTracks));
+        }
+        const storedPlaylistId = localStorage.getItem('currentPlaylistId');
+        if (storedPlaylistId) {
+          const playlist = await database.playlists.get(
+            Number(storedPlaylistId),
+          );
           if (playlist) {
             setCurrentPlaylist(playlist);
           }
-        });
+        }
       }
       setLoaded(true);
-    }
+    };
+    init();
   }, []);
 
   const liveDances = useLiveQuery(() => database.dances.toArray());
