@@ -14,7 +14,7 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import AsyncSelect from 'react-select/async';
 import { DanceVariant, database } from '../database';
 import { Option } from '../types/Option';
@@ -55,6 +55,11 @@ const DanceVariantModal: React.FC<DanceVariantModalProps> = ({
   const [newVariant, setNewVariant] = useState(
     initialValue ?? ({} as Partial<DanceVariant>),
   );
+
+  useEffect(() => {
+    setNewVariant(initialValue ?? ({} as Partial<DanceVariant>));
+  }, [initialValue]);
+
   const defaultSong = useLiveQuery(
     () => database.songs.get(newVariant.songId ?? -1),
     [newVariant.songId],
@@ -122,8 +127,11 @@ const DanceVariantModal: React.FC<DanceVariantModalProps> = ({
                 }}
                 cacheOptions
                 defaultOptions
-                defaultValue={newVariant.songId}
-                defaultInputValue={defaultSong?.title}
+                value={
+                  defaultSong
+                    ? { value: defaultSong.id, label: defaultSong.title }
+                    : null
+                }
                 loadOptions={loadSongOptions}
                 onChange={(option: any) => {
                   setNewVariant({

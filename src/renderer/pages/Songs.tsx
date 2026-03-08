@@ -1,4 +1,4 @@
-import { MenuButton, TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
+import { TriangleDownIcon, TriangleUpIcon } from '@chakra-ui/icons';
 import {
   Box,
   Button,
@@ -7,6 +7,7 @@ import {
   HStack,
   Input,
   Menu,
+  MenuButton,
   MenuItem,
   MenuList,
   Modal,
@@ -43,7 +44,6 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import React, { useContext, useMemo, useState } from 'react';
 import { CiImport } from 'react-icons/ci';
 import { GrValidate } from 'react-icons/gr';
-import { MdAppRegistration, MdDelete } from 'react-icons/md';
 import { DebouncedInput } from '../common/Filter';
 import { Page } from '../common/Page';
 import { TableControls } from '../common/TableControls';
@@ -100,31 +100,25 @@ export function Songs() {
             >
               Play
             </Button>
-            <Menu>
-              <MenuButton as={Button} rightIcon={<TriangleDownIcon />}>
-                Actions...
-              </MenuButton>
-              <MenuList>
-                <MenuItem
-                  icon={<MdAppRegistration />}
-                  onClick={() => {
-                    setNewSong({ ...info.row.original });
-                    newSongModal.onOpen();
-                  }}
-                >
-                  Edit...
-                </MenuItem>
-                <MenuItem
-                  icon={<MdDelete />}
-                  onClick={confirmAction(
-                    `Delete ${info.row.original.title}?`,
-                    () => deleteSong(info.row.original.id),
-                  )}
-                >
-                  Delete
-                </MenuItem>
-              </MenuList>
-            </Menu>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setNewSong({ ...info.row.original });
+                newSongModal.onOpen();
+              }}
+            >
+              Edit
+            </Button>
+            <Button
+              colorScheme="red"
+              variant="outline"
+              onClick={confirmAction(
+                `Delete ${info.row.original.title}?`,
+                () => deleteSong(info.row.original.id),
+              )}
+            >
+              Delete
+            </Button>
           </HStack>
         ),
       }),

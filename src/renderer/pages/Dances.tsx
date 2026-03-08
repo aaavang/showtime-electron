@@ -1,6 +1,4 @@
 import {
-  ChevronDownIcon,
-  MenuButton,
   TriangleDownIcon,
   TriangleUpIcon,
 } from '@chakra-ui/icons';
@@ -10,15 +8,22 @@ import {
   Center,
   chakra,
   HStack,
-  Menu,
-  MenuItem,
-  MenuList,
+  Input,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Table,
   Tbody,
   Td,
+  Text,
   Th,
   Thead,
   Tr,
+  useDisclosure,
   useToast,
   VStack,
 } from '@chakra-ui/react';
@@ -35,7 +40,6 @@ import {
 } from '@tanstack/react-table';
 import { useLiveQuery } from 'dexie-react-hooks';
 import React, { useCallback, useContext, useMemo, useState } from 'react';
-import { MdAppRegistration, MdDelete } from 'react-icons/md';
 import { useNavigate } from 'react-router-dom';
 import { DebouncedInput } from '../common/Filter';
 import { Page } from '../common/Page';
@@ -55,6 +59,8 @@ export function Dances() {
   const { setJukeboxState } = useContext(JukeboxContext);
 
   const [newDanceModal, DanceModal] = useDanceModal();
+  const editDanceModal = useDisclosure();
+  const [editedDance, setEditedDance] = useState({} as Partial<Dance>);
 
   const deleteDance = async (id: number) => {
     await database.danceVariants.where('danceId').equals(id).delete();
@@ -106,34 +112,31 @@ export function Dances() {
                 Play Default
               </Button>
               <Button
-                colorScheme="gray"
+                colorScheme="yellow"
                 variant="outline"
                 onClick={() => navigate(`/dances/${info.row.original.id}`)}
               >
-                Play Variant...
+                Variants...
               </Button>
-              <Menu>
-                <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
-                  Actions
-                </MenuButton>
-                <MenuList>
-                  <MenuItem
-                    icon={<MdAppRegistration />}
-                    onClick={() => navigate(`/dances/${info.row.original.id}`)}
-                  >
-                    Edit...
-                  </MenuItem>
-                  <MenuItem
-                    icon={<MdDelete />}
-                    onClick={confirmAction(
-                      `Delete ${info.row.original.title}?`,
-                      () => deleteDance(info.row.original.id),
-                    )}
-                  >
-                    Delete
-                  </MenuItem>
-                </MenuList>
-              </Menu>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setEditedDance({ ...info.row.original });
+                  editDanceModal.onOpen();
+                }}
+              >
+                Edit
+              </Button>
+              <Button
+                colorScheme="red"
+                variant="outline"
+                onClick={confirmAction(
+                  `Delete ${info.row.original.title}?`,
+                  () => deleteDance(info.row.original.id),
+                )}
+              >
+                Delete
+              </Button>
             </HStack>
           );
         },
@@ -158,6 +161,29 @@ export function Dances() {
       columnFilters,
     },
   });
+
+  const saveEditedDance = async () => {
+    if (!editedDance.title) {
+      toast({
+        title: 'Error',
+        description: 'Title is required',
+        status: 'error',
+        duration: 2000,
+        isClosable: true,
+      });
+      return;
+    }
+    await database.dances.update(editedDance.id!, { title: editedDance.title });
+    toast({
+      title: 'Success',
+      description: `Dance renamed to "${editedDance.title}"`,
+      status: 'success',
+      duration: 2000,
+      isClosable: true,
+    });
+    setEditedDance({});
+    editDanceModal.onClose();
+  };
 
   const saveDance = useCallback(
     async (newDance: Partial<NewDance>) => {
@@ -289,6 +315,32 @@ export function Dances() {
         <TableControls table={table} />
       </VStack>
       <DanceModal onSubmit={saveDance} />
+      <Modal isOpen={editDanceModal.isOpen} onClose={editDanceModal.onClose}>
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Edit Dance</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack gap="5px">
+              <Text>Title</Text>
+              <Input
+                value={editedDance.title ?? ''}
+                onChange={(e) =>
+                  setEditedDance({ ...editedDance, title: e.target.value })
+                }
+              />
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button colorScheme="blue" mr={3} onClick={saveEditedDance}>
+              Save
+            </Button>
+            <Button variant="ghost" onClick={editDanceModal.onClose}>
+              Cancel
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </Page>
   );
 }

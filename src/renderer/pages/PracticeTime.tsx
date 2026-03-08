@@ -1,5 +1,6 @@
 import { ChevronDownIcon, MenuButton } from '@chakra-ui/icons';
 import {
+  Box,
   Button,
   Checkbox,
   Flex,
@@ -9,7 +10,6 @@ import {
   MenuItem,
   MenuList,
   Table,
-  TableContainer,
   Tbody,
   Td,
   Text,
@@ -17,6 +17,7 @@ import {
   Thead,
   Tr,
   useToast,
+  VStack,
 } from '@chakra-ui/react';
 import {
   createColumnHelper,
@@ -24,6 +25,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import { useLiveQuery } from 'dexie-react-hooks';
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import {
   MdCleaningServices,
@@ -35,6 +37,7 @@ import * as builder from 'xmlbuilder';
 import { useClickAway, useKeyPressEvent } from 'react-use';
 import { Page } from '../common/Page';
 import { database, Playlist } from '../database';
+import { useChangeVariantModal } from '../hooks/ChangeVariantModal';
 import { useSavePlaylistModal } from '../hooks/SavePlaylistModal';
 import {
   HydratedDanceVariant,
@@ -58,6 +61,8 @@ export function PracticeTime() {
     useSavePlaylistModal();
   const [selectPlaylistModalDisclosure, SelectPlaylistModal] =
     useSelectPlaylistModal();
+  const [changeVariantDisclosure, changeVariantRef, ChangeVariantModal] =
+    useChangeVariantModal();
   const [showMode, setShowMode] = useState(false);
   const [userSettings] = useContext(UserSettingsContext);
   const [clickedRowNumber, setClickedRowNumber] = useState<number | null>(null);
@@ -81,6 +86,44 @@ export function PracticeTime() {
     }
     setLoaded(true);
   }, []);
+
+  const liveDances = useLiveQuery(() => database.dances.toArray());
+  const liveSongs = useLiveQuery(() => database.songs.toArray());
+  const liveVariants = useLiveQuery(() => database.danceVariants.toArray());
+
+  useEffect(() => {
+    if (!loaded || !liveDances || !liveSongs || !liveVariants) return;
+    const current = tracksRef.current;
+    if (current.length === 0) return;
+
+    const danceMap = new Map(liveDances.map((d) => [d.id, d]));
+    const songMap = new Map(liveSongs.map((s) => [s.id, s]));
+    const variantMap = new Map(liveVariants.map((v) => [v.id, v]));
+
+    let changed = false;
+    const updated = current.map((track) => {
+      const dance = danceMap.get(track.dance.id);
+      const song = songMap.get(track.song.id);
+      const variant = variantMap.get(track.danceVariant.id);
+      if (!dance || !song || !variant) return track;
+
+      if (
+        dance.title !== track.dance.title ||
+        song.title !== track.song.title ||
+        song.path !== track.song.path ||
+        variant.title !== track.danceVariant.title ||
+        variant.songId !== track.danceVariant.songId
+      ) {
+        changed = true;
+        return { ...track, dance, song: songMap.get(variant.songId) ?? song, danceVariant: variant };
+      }
+      return track;
+    });
+
+    if (changed) {
+      setTracks(updated);
+    }
+  }, [liveDances, liveSongs, liveVariants, loaded]);
 
   const currentTrackIndexRef = useRef(currentTrackIndex);
   useEffect(() => {
@@ -171,6 +214,22 @@ export function PracticeTime() {
             </Button>
             {!showMode && (
               <Button
+                variant="outline"
+                colorScheme={'yellow'}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  changeVariantRef.current = {
+                    track: info.row.original,
+                    rowIndex: info.row.index,
+                  };
+                  changeVariantDisclosure.onOpen();
+                }}
+              >
+                Change Variant
+              </Button>
+            )}
+            {!showMode && (
+              <Button
                 colorScheme="red"
                 variant="outline"
                 onClick={(e) => {
@@ -236,6 +295,12 @@ export function PracticeTime() {
 
   const deleteRow = (index: number) => {
     setTracks([...tracksRef.current.filter((_, i) => i !== index)]);
+  };
+
+  const updateTrackVariant = (index: number, updated: HydratedDanceVariant) => {
+    const newTracks = [...tracksRef.current];
+    newTracks[index] = updated;
+    setTracks(newTracks);
   };
 
   const savePlaylist = async (playlist: Playlist) => {
@@ -327,8 +392,8 @@ export function PracticeTime() {
 
   return (
     <Page name={showMode ? 'Showtime!' : 'Practice Time'}>
-      <TableContainer whiteSpace="wrap" width="100%" ref={tableRef}>
-        <HStack justifyContent="space-between">
+      <VStack height="100%" spacing={0} ref={tableRef}>
+        <HStack w="100%" flexShrink={0} pb={2} justifyContent="space-between">
           <Flex flexGrow={1}>
             {!showMode && (
               <Button
@@ -398,56 +463,59 @@ export function PracticeTime() {
             </Menu>
           </>
         </HStack>
-        <Table variant="simple">
-          <Thead>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <Tr key={headerGroup.id}>
-                {headerGroup.headers.map((header) => {
-                  // see https://tanstack.com/table/v8/docs/api/core/column-def#meta to type this correctly
-                  const { meta } = header.column.columnDef;
-                  return (
-                    <Th key={header.id} isNumeric={meta?.isNumeric}>
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                    </Th>
-                  );
-                })}
-              </Tr>
-            ))}
-          </Thead>
-          <Tbody>
-            {table.getRowModel().rows.map((row) => (
-              <Tr
-                key={row.id}
-                onClick={() => handleRowClick(row.index)}
-                boxShadow={
-                  clickedRowNumber === row.index
-                    ? 'inset 0px 0px 0px 2px gray;'
-                    : 'none'
-                }
-              >
-                {row.getVisibleCells().map((cell) => {
-                  // see https://tanstack.com/table/v8/docs/api/core/column-def#meta to type this correctly
-                  const { meta } = cell.column.columnDef;
-                  return (
-                    <Td key={cell.id} isNumeric={meta?.isNumeric}>
-                      {flexRender(
-                        cell.column.columnDef.cell,
-                        cell.getContext(),
-                      )}
-                    </Td>
-                  );
-                })}
-              </Tr>
-            ))}
-          </Tbody>
-        </Table>
-      </TableContainer>
+        <Box flex={1} overflowY="auto" width="100%">
+          <Table variant="simple" width="100%">
+            <Thead position="sticky" top={0} zIndex={1} bg="chakra-body-bg">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <Tr key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => {
+                    // see https://tanstack.com/table/v8/docs/api/core/column-def#meta to type this correctly
+                    const { meta } = header.column.columnDef;
+                    return (
+                      <Th key={header.id} isNumeric={meta?.isNumeric}>
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                      </Th>
+                    );
+                  })}
+                </Tr>
+              ))}
+            </Thead>
+            <Tbody>
+              {table.getRowModel().rows.map((row) => (
+                <Tr
+                  key={row.id}
+                  onClick={() => handleRowClick(row.index)}
+                  boxShadow={
+                    clickedRowNumber === row.index
+                      ? 'inset 0px 0px 0px 2px gray;'
+                      : 'none'
+                  }
+                >
+                  {row.getVisibleCells().map((cell) => {
+                    // see https://tanstack.com/table/v8/docs/api/core/column-def#meta to type this correctly
+                    const { meta } = cell.column.columnDef;
+                    return (
+                      <Td key={cell.id} isNumeric={meta?.isNumeric}>
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </Td>
+                    );
+                  })}
+                </Tr>
+              ))}
+            </Tbody>
+          </Table>
+        </Box>
+      </VStack>
       <SelectDanceModal onSubmit={addTrack} />
       <SavePlaylistModal onSubmit={savePlaylist} />
       <SelectPlaylistModal onSubmit={loadPlaylist} />
+      <ChangeVariantModal onSubmit={updateTrackVariant} />
     </Page>
   );
 }

@@ -29,7 +29,7 @@ export function Page({ children, name }: PageProps) {
         flexGrow={1}
         width="100%"
         padding="25px"
-        overflow="hidden"
+        overflow="scroll"
         id="page-container"
       >
         {children}
