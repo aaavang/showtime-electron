@@ -4,6 +4,7 @@ import { DanceDetails } from './pages/DanceDetails';
 import { Dances } from './pages/Dances';
 import { PlaylistDetails } from './pages/PlaylistDetails';
 import { Playlists } from './pages/Playlists';
+import { QueryConsole } from './pages/QueryConsole';
 import { Settings } from './pages/Settings';
 import { Songs } from './pages/Songs';
 import { PracticeTime } from './pages/PracticeTime';
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/dances/:danceId" element={<DanceDetails />} />
         <Route path="/playlists" element={<Playlists />} />
         <Route path="/playlists/:playlistId" element={<PlaylistDetails />} />
+        <Route path="/query" element={<QueryConsole />} />
         <Route path="Settings" element={<Settings />} />
       </Routes>
     </Router>

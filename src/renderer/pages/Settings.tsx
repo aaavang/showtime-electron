@@ -13,6 +13,7 @@ import {
   useToast,
 } from '@chakra-ui/react';
 import { useContext, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Page } from '../common/Page';
 import { UserSettingsContext } from '../providers/UserSettingsProvider';
 import { seedDatabase, clearDatabase } from '../seedData';
@@ -20,6 +21,7 @@ import { seedDatabase, clearDatabase } from '../seedData';
 export function Settings() {
   const [userSettings, setUserSettings] = useContext(UserSettingsContext);
   const { colorMode, toggleColorMode } = useColorMode();
+  const navigate = useNavigate();
   const toast = useToast();
   const [seeding, setSeeding] = useState(false);
   const [clearing, setClearing] = useState(false);
@@ -136,6 +138,13 @@ export function Settings() {
                   onClick={handleClear}
                 >
                   Purge Database
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => navigate('/query')}
+                >
+                  Query Console
                 </Button>
               </HStack>
             </FormControl>
