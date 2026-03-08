@@ -159,8 +159,7 @@ export function Settings() {
           ],
           async () => {
             if (dump.songs?.length) await database.songs.bulkAdd(dump.songs);
-            if (dump.dances?.length)
-              await database.dances.bulkAdd(dump.dances);
+            if (dump.dances?.length) await database.dances.bulkAdd(dump.dances);
             if (dump.danceVariants?.length)
               await database.danceVariants.bulkAdd(dump.danceVariants);
             if (dump.playlists?.length)
@@ -337,11 +336,7 @@ export function Settings() {
               <Button ref={cancelRef as any} onClick={handleImportCancel}>
                 Cancel
               </Button>
-              <Button
-                colorScheme="red"
-                onClick={handleImportConfirm}
-                ml={3}
-              >
+              <Button colorScheme="red" onClick={handleImportConfirm} ml={3}>
                 {confirmStep === 1 ? 'Continue' : 'Yes, replace everything'}
               </Button>
             </AlertDialogFooter>
