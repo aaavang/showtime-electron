@@ -48,7 +48,9 @@ database.version(1).stores({
   playlistDances: '++id, playlistId, danceVariantId, order',
 });
 
-database.open().catch(function (error) {
+database.open().catch((error) => {
+  // eslint-disable-next-line no-console
   console.error(`ERROR: ${error}`);
+  // eslint-disable-next-line no-alert
   alert(`Failed to open database: ${error}`);
 });

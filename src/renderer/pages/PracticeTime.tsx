@@ -100,7 +100,7 @@ export function PracticeTime() {
     if (loaded) {
       localStorage.setItem('tracks', JSON.stringify(tracks));
     }
-  }, [tracks]);
+  }, [tracks, loaded]);
 
   useEffect(() => {
     if (loaded) {
@@ -142,6 +142,7 @@ export function PracticeTime() {
       setLoaded(true);
     };
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const liveDances = useLiveQuery(() => database.dances.toArray());
@@ -306,6 +307,7 @@ export function PracticeTime() {
         ),
       }),
     ],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [showMode],
   );
 

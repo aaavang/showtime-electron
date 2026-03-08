@@ -122,7 +122,8 @@ export function Songs() {
         ),
       }),
     ],
-    [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [songs],
   );
 
   const [sorting, setSorting] = React.useState<SortingState>([]);

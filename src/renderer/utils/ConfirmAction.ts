@@ -4,6 +4,7 @@ export function confirmAction(
   onAbort?: () => void,
 ) {
   return () => {
+    // eslint-disable-next-line no-alert
     if (window.confirm(message)) onConfirm();
     else onAbort?.();
   };

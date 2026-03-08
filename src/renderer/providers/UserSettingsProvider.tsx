@@ -15,7 +15,7 @@ const defaultUserSettings = {
 
 export const UserSettingsContext = createContext([
   defaultUserSettings,
-  (_settings: UserSettings) => {},
+  (_settings: UserSettings) => {}, // eslint-disable-line @typescript-eslint/no-unused-vars
 ] as [UserSettings, (settings: UserSettings) => void]);
 
 export function UserSettingsProvider({
@@ -45,6 +45,7 @@ export function UserSettingsProvider({
     });
 
     window.electron.ipcRenderer.sendMessage('getPlatform');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const contextValue = useMemo(

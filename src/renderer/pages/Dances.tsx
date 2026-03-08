@@ -139,7 +139,8 @@ export function Dances() {
         },
       }),
     ],
-    [dances],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [dances, deleteDance, editDanceModal, navigate, setJukeboxState],
   );
 
   const table = useReactTable({

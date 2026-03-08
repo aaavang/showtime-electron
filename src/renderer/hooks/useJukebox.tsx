@@ -1,5 +1,11 @@
 import { CloseIcon } from '@chakra-ui/icons';
 import {
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
   Badge,
   Box,
   Button,
@@ -19,7 +25,6 @@ import React, {
 import { Dance, DanceVariant, Song } from '../database';
 import { AudioPlayer } from '../pages/AudioPlayerTone';
 import { UserSettingsContext } from '../providers/UserSettingsProvider';
-import { confirmAction } from '../utils/ConfirmAction';
 import { HydratedDanceVariant } from './SelectDanceModal';
 import { useSongPathEncoder } from './useSongPathEncoder';
 
@@ -80,6 +85,9 @@ function Jukebox({ state, setState, initialFocusRef }: JukeboxProps) {
   const [userSettings] = useContext(UserSettingsContext);
   const songPathEncoder = useSongPathEncoder();
   const isPlayingRef = useRef(false);
+  const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
+  const guardCancelRef = useRef<HTMLButtonElement>(null);
+
   if (!state.showJukebox || !state.song) {
     return null;
   }
@@ -121,7 +129,7 @@ function Jukebox({ state, setState, initialFocusRef }: JukeboxProps) {
 
   const withShowModeGuard = (action: () => void) => {
     if (state.showMode && isPlayingRef.current) {
-      confirmAction('We are running a show! Are you sure?', action)();
+      setPendingAction(() => action);
     } else {
       action();
     }
@@ -237,6 +245,38 @@ function Jukebox({ state, setState, initialFocusRef }: JukeboxProps) {
         onEnd={onEnd}
         isPlayingRef={isPlayingRef}
       />
+      <AlertDialog
+        isOpen={pendingAction !== null}
+        leastDestructiveRef={guardCancelRef}
+        onClose={() => setPendingAction(null)}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader>Show Mode</AlertDialogHeader>
+            <AlertDialogBody>
+              We are running a show! Are you sure?
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button
+                ref={guardCancelRef}
+                onClick={() => setPendingAction(null)}
+              >
+                Cancel
+              </Button>
+              <Button
+                colorScheme="red"
+                onClick={() => {
+                  setPendingAction(null);
+                  pendingAction?.();
+                }}
+                ml={3}
+              >
+                Continue
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </Box>
   );
 }

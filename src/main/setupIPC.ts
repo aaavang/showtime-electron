@@ -9,7 +9,7 @@ export const setupIPC = () => {
     event.returnValue = app.getAppPath();
   });
 
-  ipcMain.on('getPlatform', async (event, _arg) => {
+  ipcMain.on('getPlatform', async (event) => {
     event.reply('getPlatform', os.platform());
   });
 
@@ -38,7 +38,7 @@ export const setupIPC = () => {
     'wv', // WavPack
   ];
 
-  ipcMain.on('selectAudioFile', async (event, _arg) => {
+  ipcMain.on('selectAudioFile', async (event) => {
     try {
       const paths = dialog.showOpenDialogSync({
         message: 'Select an audio file',
@@ -69,7 +69,7 @@ export const setupIPC = () => {
     }
   });
 
-  ipcMain.on('getAudioFilesInDirectory', async (event, _arg) => {
+  ipcMain.on('getAudioFilesInDirectory', async (event) => {
     try {
       const paths = dialog.showOpenDialogSync({
         message: 'Select a directory',

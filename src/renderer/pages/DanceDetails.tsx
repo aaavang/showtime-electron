@@ -44,14 +44,17 @@ export function DanceDetails() {
     {} as Partial<DanceVariant>,
   );
 
-  const makeVariantDefault = async (variantId: number) => {
-    await database.danceVariants
-      .where('danceId')
-      .equals(danceId)
-      .and((v) => v.defaultVariant)
-      .modify({ defaultVariant: false });
-    await database.danceVariants.update(variantId, { defaultVariant: true });
-  };
+  const makeVariantDefault = useCallback(
+    async (variantId: number) => {
+      await database.danceVariants
+        .where('danceId')
+        .equals(danceId)
+        .and((v) => v.defaultVariant)
+        .modify({ defaultVariant: false });
+      await database.danceVariants.update(variantId, { defaultVariant: true });
+    },
+    [danceId],
+  );
 
   const saveNewVariant = useCallback(
     async (newVariant: Partial<DanceVariant>) => {
@@ -100,7 +103,7 @@ export function DanceDetails() {
         await makeVariantDefault(newVariantId);
       }
     },
-    [],
+    [danceId, danceVariants, makeVariantDefault, toast],
   );
 
   const deleteVariant = async (id: number) => {

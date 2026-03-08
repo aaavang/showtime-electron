@@ -60,7 +60,6 @@ function SavePlaylistModal({
       .equalsIgnoreCase(newPlaylist.title!)
       .first();
     if (existingPlaylist) {
-      console.log('existingPlaylist', existingPlaylist);
       confirmAction(
         `Playlist with title "${newPlaylist.title}", already exists. Overwrite?`,
         () => {
@@ -73,7 +72,7 @@ function SavePlaylistModal({
 
     onSubmit(newPlaylist as Playlist);
     disclosure.onClose();
-  }, [newPlaylist, onSubmit]);
+  }, [newPlaylist, onSubmit, disclosure]);
 
   return (
     <Modal isOpen={disclosure.isOpen} onClose={disclosure.onClose}>
