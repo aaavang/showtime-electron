@@ -373,7 +373,7 @@ async function executeUpdate(
   const ids = rows.map((r) => r.id);
   let updatedCount = 0;
   for (const id of ids) {
-    await table.update(id as any, sets);
+    await (table as any).update(id, sets);
     updatedCount++;
   }
 

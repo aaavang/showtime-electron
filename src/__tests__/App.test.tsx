@@ -59,6 +59,7 @@ const mockUserSettings = {
   enableFineGrainAutoplay: false,
   useHTML5Audio: false,
   isWindows: false,
+  preloadAudio: false,
 };
 
 describe('App', () => {

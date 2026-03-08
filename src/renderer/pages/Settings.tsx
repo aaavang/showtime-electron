@@ -110,6 +110,28 @@ export function Settings() {
           </FormControl>
         </CardBody>
       </Card>
+      <Card>
+        <CardBody>
+          <FormControl>
+            <HStack gap="15px" alignItems="center" textAlign="center">
+              <Text>Preload Audio</Text>
+              <Checkbox
+                isChecked={userSettings.preloadAudio}
+                onChange={(e) => {
+                  setUserSettings({
+                    ...userSettings,
+                    preloadAudio: e.target.checked,
+                  });
+                }}
+              />
+            </HStack>
+            <Text fontSize="xs">
+              When enabled, all songs in the Practice Time list will be
+              preloaded into memory for instant playback.
+            </Text>
+          </FormControl>
+        </CardBody>
+      </Card>
       <Box mt={8}>
         <Divider mb={4} />
         <Heading as="h3" size="md" color="red.500" mb={4}>

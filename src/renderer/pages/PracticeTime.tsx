@@ -37,6 +37,7 @@ import * as builder from 'xmlbuilder';
 import { useClickAway, useKeyPressEvent } from 'react-use';
 import { Page } from '../common/Page';
 import { database, Playlist } from '../database';
+import { useAudioPreloader } from '../hooks/useAudioPreloader';
 import { useChangeVariantModal } from '../hooks/ChangeVariantModal';
 import { useSavePlaylistModal } from '../hooks/SavePlaylistModal';
 import {
@@ -70,6 +71,18 @@ export function PracticeTime() {
   useClickAway(tableRef, () => {
     setClickedRowNumber(null);
   });
+
+  const uniqueSongs = useMemo(() => {
+    const seen = new Set<number>();
+    return tracks
+      .map((t) => t.song)
+      .filter((s) => {
+        if (seen.has(s.id)) return false;
+        seen.add(s.id);
+        return true;
+      });
+  }, [tracks]);
+  useAudioPreloader(uniqueSongs);
 
   const tracksRef = useRef(tracks);
   useEffect(() => {
