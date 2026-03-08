@@ -1,4 +1,10 @@
 import {
+  AlertDialog,
+  AlertDialogBody,
+  AlertDialogContent,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogOverlay,
   Button,
   HStack,
   Kbd,
@@ -12,7 +18,6 @@ import { useInterval, useKeyPressEvent } from 'react-use';
 import { GrainPlayer } from 'tone';
 import { AudioCacheContext } from '../providers/AudioCacheProvider';
 import { UserSettingsContext } from '../providers/UserSettingsProvider';
-import { confirmAction } from '../utils/ConfirmAction';
 import { JukeboxContext } from '../providers/JukeboxProvider';
 
 export type AudioPlayerProps = {
@@ -40,8 +45,10 @@ export function AudioPlayer(props: AudioPlayerProps) {
   const [isFading, setIsFading] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [showPauseConfirm, setShowPauseConfirm] = useState(false);
   const [rate, setRate] = useState(1);
   const [tone, setTone] = useState<ToneState | null>(null);
+  const pauseCancelRef = useRef<HTMLButtonElement>(null);
   const toneRef = useRef<ToneState | null>(null);
   toneRef.current = tone;
   const playbackRef = useRef({ startOffset: 0, startTime: 0 });
@@ -195,10 +202,7 @@ export function AudioPlayer(props: AudioPlayerProps) {
 
     if (isPlaying) {
       if (props.showMode) {
-        confirmAction(
-          'We are running a show! Are you sure you want to pause?',
-          () => doPause(),
-        )();
+        setShowPauseConfirm(true);
       } else {
         doPause();
       }
@@ -377,6 +381,38 @@ export function AudioPlayer(props: AudioPlayerProps) {
           </>
         )}
       </Text>
+      <AlertDialog
+        isOpen={showPauseConfirm}
+        leastDestructiveRef={pauseCancelRef}
+        onClose={() => setShowPauseConfirm(false)}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader>Pause Playback</AlertDialogHeader>
+            <AlertDialogBody>
+              We are running a show! Are you sure you want to pause?
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button
+                ref={pauseCancelRef}
+                onClick={() => setShowPauseConfirm(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                colorScheme="red"
+                onClick={() => {
+                  setShowPauseConfirm(false);
+                  doPause();
+                }}
+                ml={3}
+              >
+                Pause
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
     </VStack>
   );
 }
