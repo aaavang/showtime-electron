@@ -133,6 +133,17 @@ const SEED_PLAYLISTS: PlaylistDef[] = [
     title: 'Quick Practice',
     danceNames: ['Waltz', 'Tango'],
   },
+  {
+    title: 'Stress Test (36 tracks)',
+    danceNames: Array.from({ length: 6 }, () => [
+      'Waltz',
+      'Tango',
+      'Foxtrot',
+      'Cha Cha',
+      'Rumba',
+      'Jive',
+    ]).flat(),
+  },
 ];
 
 export async function seedDatabase(): Promise<void> {

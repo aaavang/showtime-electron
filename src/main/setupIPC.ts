@@ -9,6 +9,10 @@ export const setupIPC = () => {
     event.returnValue = app.getAppPath();
   });
 
+  ipcMain.on('getIsPackaged', (event) => {
+    event.returnValue = app.isPackaged;
+  });
+
   ipcMain.on('getPlatform', async (event) => {
     event.reply('getPlatform', os.platform());
   });

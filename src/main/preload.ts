@@ -14,6 +14,7 @@ export type Channels =
 
 const electronHandler = {
   appPath: ipcRenderer.sendSync('getAppPath') as string,
+  isPackaged: ipcRenderer.sendSync('getIsPackaged') as boolean,
   ipcRenderer: {
     sendMessage(channel: Channels, ...args: unknown[]) {
       ipcRenderer.send(channel, ...args);

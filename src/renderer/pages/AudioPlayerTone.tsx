@@ -14,7 +14,7 @@ import {
   VStack,
 } from '@chakra-ui/react';
 import React, { useContext, useEffect, useRef, useState } from 'react';
-import { useInterval, useKeyPressEvent } from 'react-use';
+import { useInterval } from 'react-use';
 import { GrainPlayer } from 'tone';
 import { AudioCacheContext } from '../providers/AudioCacheProvider';
 import { UserSettingsContext } from '../providers/UserSettingsProvider';
@@ -211,13 +211,30 @@ export function AudioPlayer(props: AudioPlayerProps) {
     }
   };
 
-  useKeyPressEvent(' ', handlePlayPause);
-  useKeyPressEvent('[', handleDecreaseRate);
-  useKeyPressEvent(']', handleIncreaseRate);
-  useKeyPressEvent('Escape', () => {
-    if (!props.showMode) {
-      setJukeboxState({ showJukebox: false });
-    }
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      switch (e.key) {
+        case ' ':
+          e.preventDefault();
+          handlePlayPause();
+          break;
+        case '[':
+          handleDecreaseRate();
+          break;
+        case ']':
+          handleIncreaseRate();
+          break;
+        case 'Escape':
+          if (!props.showMode) {
+            setJukeboxState({ showJukebox: false });
+          }
+          break;
+        default:
+          break;
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
   });
 
   // Fade interval
@@ -302,16 +319,19 @@ export function AudioPlayer(props: AudioPlayerProps) {
     document.getElementById('fade-button')?.blur();
   };
 
-  const duration = tone?.duration ?? -1;
+  const duration = tone?.duration ?? 0;
+  const isLoaded = tone !== null;
   return (
     <VStack w="100%">
       <pre>
-        {formatSecondsToLabel(currentTime)}/{formatSecondsToLabel(duration)}
+        {isLoaded
+          ? `${formatSecondsToLabel(currentTime)}/${formatSecondsToLabel(duration)}`
+          : '--:--/--:--'}
       </pre>
       <Progress
         cursor="pointer"
         hasStripe
-        value={(currentTime / duration) * 100}
+        value={isLoaded && duration > 0 ? (currentTime / duration) * 100 : 0}
         w="100%"
         onClick={(e) => {
           const percent = e.nativeEvent.offsetX / e.currentTarget.offsetWidth;

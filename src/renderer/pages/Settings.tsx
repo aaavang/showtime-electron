@@ -259,35 +259,39 @@ export function Settings() {
         <Card borderColor="red.300" borderWidth="1px">
           <CardBody>
             <FormControl>
-              <Text fontSize="sm" mb={3}>
-                Seed the database with sample dances, songs, variants, and
-                playlists for testing. Purge removes all data.
-              </Text>
-              <HStack>
-                <Button
-                  colorScheme="blue"
-                  size="sm"
-                  isLoading={seeding}
-                  onClick={handleSeed}
-                >
-                  Seed Database
-                </Button>
-                <Button
-                  colorScheme="red"
-                  size="sm"
-                  isLoading={clearing}
-                  onClick={handleClear}
-                >
-                  Purge Database
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => navigate('/query')}
-                >
-                  Query Console
-                </Button>
-              </HStack>
+              {!window.electron.isPackaged && (
+                <>
+                  <Text fontSize="sm" mb={3}>
+                    Seed the database with sample dances, songs, variants, and
+                    playlists for testing. Purge removes all data.
+                  </Text>
+                  <HStack mb={3}>
+                    <Button
+                      colorScheme="blue"
+                      size="sm"
+                      isLoading={seeding}
+                      onClick={handleSeed}
+                    >
+                      Seed Database
+                    </Button>
+                    <Button
+                      colorScheme="red"
+                      size="sm"
+                      isLoading={clearing}
+                      onClick={handleClear}
+                    >
+                      Purge Database
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => navigate('/query')}
+                    >
+                      Query Console
+                    </Button>
+                  </HStack>
+                </>
+              )}
               <Divider my={3} />
               <Text fontSize="sm" mb={3}>
                 Export the entire database to a JSON file, or import from a
