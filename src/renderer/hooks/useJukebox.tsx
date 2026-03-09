@@ -13,7 +13,14 @@ import {
   Heading,
   HStack,
   IconButton,
+  Popover,
+  PopoverArrow,
+  PopoverBody,
+  PopoverContent,
+  PopoverTrigger,
+  Text,
   VStack,
+  keyframes,
 } from '@chakra-ui/react';
 import React, {
   MutableRefObject,
@@ -22,6 +29,17 @@ import React, {
   useRef,
   useState,
 } from 'react';
+
+const pulseAnimation = keyframes`
+  0%, 50% { transform: scale(1); }
+  55% { transform: scale(1.2); }
+  60% { transform: scale(1); }
+  65% { transform: scale(1.2); }
+  70% { transform: scale(1); }
+  75% { transform: scale(1.2); }
+  80% { transform: scale(1); }
+  100% { transform: scale(1); }
+`;
 import { Dance, DanceVariant, Song } from '../database';
 import { AudioPlayer } from '../pages/AudioPlayerTone';
 import { UserSettingsContext } from '../providers/UserSettingsProvider';
@@ -215,6 +233,30 @@ function Jukebox({ state, setState, initialFocusRef }: JukeboxProps) {
               <Heading as="h3" size="md">
                 {state.song.title}
               </Heading>
+              {state.playlist?.[state.currentTrackIndex!]?.notes && (
+                <Popover trigger="hover" placement="top">
+                  <PopoverTrigger>
+                    <Badge
+                      key={state.currentTrackIndex}
+                      colorScheme="yellow"
+                      cursor="pointer"
+                      mt={2}
+                      mb={4}
+                      px={2}
+                      py={1}
+                      animation={`${pulseAnimation} 2s ease-in-out`}
+                    >
+                      Hover for Notes
+                    </Badge>
+                  </PopoverTrigger>
+                  <PopoverContent bg="yellow.100">
+                    <PopoverArrow bg="yellow.100" />
+                    <PopoverBody whiteSpace="pre-wrap" color="black">
+                      {state.playlist[state.currentTrackIndex!].notes}
+                    </PopoverBody>
+                  </PopoverContent>
+                </Popover>
+              )}
             </VStack>
           </Flex>
           {state.playlist && (

@@ -1,5 +1,6 @@
 import { ChevronDownIcon, MenuButton } from '@chakra-ui/icons';
 import {
+  Badge,
   Box,
   Button,
   Checkbox,
@@ -46,6 +47,7 @@ import { Page } from '../common/Page';
 import { database, Playlist } from '../database';
 import { useAudioPreloader } from '../hooks/useAudioPreloader';
 import { useChangeVariantModal } from '../hooks/ChangeVariantModal';
+import { useNotesModal } from '../hooks/NotesModal';
 import { useSavePlaylistModal } from '../hooks/SavePlaylistModal';
 import {
   HydratedDanceVariant,
@@ -73,10 +75,12 @@ export function PracticeTime() {
     useSelectPlaylistModal();
   const [changeVariantDisclosure, changeVariantRef, ChangeVariantModal] =
     useChangeVariantModal();
+  const [notesDisclosure, notesRef, NotesModal] = useNotesModal();
   const [currentPlaylist, setCurrentPlaylist] = useState<Playlist | null>(null);
   const [showMode, setShowMode] = useState(false);
   const [userSettings] = useContext(UserSettingsContext);
   const [clickedRowNumber, setClickedRowNumber] = useState<number | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const tableRef = useRef(null);
   useClickAway(tableRef, () => {
     setClickedRowNumber(null);
@@ -95,10 +99,16 @@ export function PracticeTime() {
   useAudioPreloader(uniqueSongs);
 
   const tracksRef = useRef(tracks);
+  const initialLoadRef = useRef(true);
   useEffect(() => {
     tracksRef.current = tracks;
     if (loaded) {
       localStorage.setItem('tracks', JSON.stringify(tracks));
+      if (initialLoadRef.current) {
+        initialLoadRef.current = false;
+      } else {
+        setHasUnsavedChanges(true);
+      }
     }
   }, [tracks, loaded]);
 
@@ -244,6 +254,26 @@ export function PracticeTime() {
         ),
         header: 'Autoplay',
       }),
+      columnHelper.accessor('notes', {
+        cell: (info) => (
+          <Button
+            size="sm"
+            variant="outline"
+            colorScheme={info.row.original.notes ? 'blue' : 'gray'}
+            onClick={(e) => {
+              e.stopPropagation();
+              notesRef.current = {
+                track: info.row.original,
+                rowIndex: info.row.index,
+              };
+              notesDisclosure.onOpen();
+            }}
+          >
+            {info.row.original.notes ? 'Show Notes' : 'Add Notes'}
+          </Button>
+        ),
+        header: 'Notes',
+      }),
       columnHelper.display({
         id: 'actions',
         header: 'Actions',
@@ -367,10 +397,17 @@ export function PracticeTime() {
     setTracks(newTracks);
   };
 
+  const updateTrackNotes = (index: number, notes: string) => {
+    const newTracks = [...tracksRef.current];
+    newTracks[index] = { ...newTracks[index], notes };
+    setTracks(newTracks);
+  };
+
   const savePlaylist = async (playlist: Playlist) => {
     playlist.tracksString = JSON.stringify(tracks);
     const id = await database.playlists.put(playlist);
     setCurrentPlaylist({ ...playlist, id });
+    setHasUnsavedChanges(false);
     toast({
       title: `Playlist "${playlist.title}" saved`,
       status: 'success',
@@ -418,6 +455,7 @@ export function PracticeTime() {
     const hydrated = await hydratePlaylist(playlist);
     setTracks(hydrated);
     setCurrentPlaylist(playlist);
+    setHasUnsavedChanges(false);
   };
 
   const toggleShow = () => {
@@ -538,6 +576,11 @@ export function PracticeTime() {
             )}
           </Flex>
           <>
+            {hasUnsavedChanges && (
+              <Badge colorScheme="orange" fontSize="sm" px={2} py={1}>
+                Unsaved Changes
+              </Badge>
+            )}
             <Menu>
               <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
                 Playlist Actions...
@@ -576,6 +619,7 @@ export function PracticeTime() {
                     onClick={() => {
                       setTracks([]);
                       setCurrentPlaylist(null);
+                      setHasUnsavedChanges(false);
                     }}
                   >
                     Clear
@@ -659,6 +703,7 @@ export function PracticeTime() {
       <SavePlaylistModal onSubmit={savePlaylist} />
       <SelectPlaylistModal onSubmit={loadPlaylist} />
       <ChangeVariantModal onSubmit={updateTrackVariant} />
+      <NotesModal onSubmit={updateTrackNotes} />
     </Page>
   );
 }

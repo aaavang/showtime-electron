@@ -31,6 +31,7 @@ export type HydratedDanceVariant = {
   dance: Dance;
   danceVariant: DanceVariant;
   autoplay: boolean;
+  notes?: string;
 };
 
 export const useSelectDanceModal = (): [
