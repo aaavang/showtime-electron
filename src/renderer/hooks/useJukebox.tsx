@@ -18,7 +18,6 @@ import {
   PopoverBody,
   PopoverContent,
   PopoverTrigger,
-  Text,
   VStack,
   keyframes,
 } from '@chakra-ui/react';
@@ -29,6 +28,11 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import { Dance, DanceVariant, Song } from '../database';
+import { AudioPlayer } from '../pages/AudioPlayerTone';
+import { UserSettingsContext } from '../providers/UserSettingsProvider';
+import { HydratedDanceVariant } from './SelectDanceModal';
+import { useSongPathEncoder } from './useSongPathEncoder';
 
 const pulseAnimation = keyframes`
   0%, 50% { transform: scale(1); }
@@ -40,11 +44,6 @@ const pulseAnimation = keyframes`
   80% { transform: scale(1); }
   100% { transform: scale(1); }
 `;
-import { Dance, DanceVariant, Song } from '../database';
-import { AudioPlayer } from '../pages/AudioPlayerTone';
-import { UserSettingsContext } from '../providers/UserSettingsProvider';
-import { HydratedDanceVariant } from './SelectDanceModal';
-import { useSongPathEncoder } from './useSongPathEncoder';
 
 export type JukeboxState = {
   showMode?: boolean;
