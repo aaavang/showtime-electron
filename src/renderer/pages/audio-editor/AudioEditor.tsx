@@ -36,6 +36,7 @@ import { GrainPlayer } from 'tone';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Page } from '../../common/Page';
 import { database } from '../../database';
+import { useSongPathEncoder } from '../../hooks/useSongPathEncoder';
 import { AudioCacheContext } from '../../providers/AudioCacheProvider';
 import { renderOfflineAudio } from '../../utils/renderOfflineAudio';
 import { Waveform } from './Waveform';
@@ -44,6 +45,7 @@ export function AudioEditor() {
   const toast = useToast();
   const navigate = useNavigate();
   const audioCache = useContext(AudioCacheContext);
+  const songPathEncoder = useSongPathEncoder();
   const songId = parseInt(useParams().songId!, 10);
   const [searchParams] = useSearchParams();
   const variantIdParam = searchParams.get('variantId');
@@ -91,7 +93,7 @@ export function AudioEditor() {
     if (!song) return undefined;
 
     let disposed = false;
-    const src = encodeURI(`showtime://${song.path}`);
+    const src = songPathEncoder(song);
 
     const cached = audioCache.get(src);
     if (cached && cached instanceof AudioBuffer) {
@@ -107,7 +109,12 @@ export function AudioEditor() {
       if (disposed) return;
       try {
         const ctx = new window.AudioContext();
-        const decoded = await ctx.decodeAudioData(event.buffer);
+        // IPC may deliver a Uint8Array instead of ArrayBuffer on some platforms
+        const buf =
+          event.buffer instanceof ArrayBuffer
+            ? event.buffer
+            : new Uint8Array(event.buffer).buffer;
+        const decoded = await ctx.decodeAudioData(buf);
         setAudioBuffer(decoded);
         setEndTime(decoded.duration);
       } catch (error) {
@@ -127,7 +134,7 @@ export function AudioEditor() {
       disposed = true;
       unsubscribe?.();
     };
-  }, [song, toast, audioCache]);
+  }, [song, toast, audioCache, songPathEncoder]);
 
   const handleRegionChange = useCallback((start: number, end: number) => {
     setStartTime(start);
@@ -358,12 +365,12 @@ export function AudioEditor() {
         });
         if (result.error) throw new Error(result.error);
 
-        audioCache.remove(encodeURI(`showtime://${song.path}`));
+        audioCache.remove(songPathEncoder(song));
 
         // Update song path if extension changed (e.g. .wav → .mp3)
         if (result.path !== song.path) {
           await database.songs.update(song.id, { path: result.path });
-          audioCache.remove(encodeURI(`showtime://${result.path}`));
+          audioCache.remove(songPathEncoder({ ...song, path: result.path }));
         }
 
         toast({
@@ -437,6 +444,7 @@ export function AudioEditor() {
     song,
     title,
     encodeAndSaveViaIPC,
+    songPathEncoder,
     audioCache,
     toast,
     navigate,

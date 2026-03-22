@@ -105,7 +105,12 @@ export function AudioPlayer(props: AudioPlayerProps) {
       if (disposed) return;
       try {
         const ctx = new window.AudioContext();
-        const audioBuffer = await ctx.decodeAudioData(event.buffer);
+        // IPC may deliver a Uint8Array instead of ArrayBuffer on some platforms
+        const buf =
+          event.buffer instanceof ArrayBuffer
+            ? event.buffer
+            : new Uint8Array(event.buffer).buffer;
+        const audioBuffer = await ctx.decodeAudioData(buf);
         setTone(buildPlayer(audioBuffer));
       } catch (error) {
         toast({
