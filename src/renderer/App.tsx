@@ -8,6 +8,7 @@ import { QueryConsole } from './pages/QueryConsole';
 import { Settings } from './pages/Settings';
 import { Songs } from './pages/Songs';
 import { PracticeTime } from './pages/PracticeTime';
+import { AudioEditor } from './pages/audio-editor/AudioEditor';
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="/songs" element={<Songs />} />
         <Route path="/dances" element={<Dances />} />
         <Route path="/dances/:danceId" element={<DanceDetails />} />
+        <Route path="/audio-editor/:songId" element={<AudioEditor />} />
         <Route path="/playlists" element={<Playlists />} />
         <Route path="/playlists/:playlistId" element={<PlaylistDetails />} />
         <Route path="/query" element={<QueryConsole />} />

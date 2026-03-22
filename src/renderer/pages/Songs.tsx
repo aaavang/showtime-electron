@@ -44,6 +44,7 @@ import { useLiveQuery } from 'dexie-react-hooks';
 import React, { useContext, useMemo, useState } from 'react';
 import { CiImport } from 'react-icons/ci';
 import { GrValidate } from 'react-icons/gr';
+import { useNavigate } from 'react-router-dom';
 import { DebouncedInput } from '../common/Filter';
 import { Page } from '../common/Page';
 import { TableControls } from '../common/TableControls';
@@ -56,6 +57,7 @@ import { getFilename } from '../utils/Filename';
 
 export function Songs() {
   const toast = useToast();
+  const navigate = useNavigate();
   const { setJukeboxState } = useContext(JukeboxContext);
   const songs = useLiveQuery(() => database.songs.toArray());
   const [validation, setValidation] = useState({
@@ -108,6 +110,12 @@ export function Songs() {
               }}
             >
               Edit
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/audio-editor/${info.row.original.id}`)}
+            >
+              Edit Audio
             </Button>
             <Button
               colorScheme="red"

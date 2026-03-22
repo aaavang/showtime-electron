@@ -59,18 +59,21 @@ export function Dances() {
   const editDanceModal = useDisclosure();
   const [editedDance, setEditedDance] = useState({} as Partial<Dance>);
 
-  const deleteDance = async (id: number) => {
-    await database.danceVariants.where('danceId').equals(id).delete();
+  const deleteDance = useCallback(
+    async (id: number) => {
+      await database.danceVariants.where('danceId').equals(id).delete();
 
-    await database.dances.delete(id);
-    toast({
-      title: 'Success',
-      description: 'Dance deleted',
-      status: 'success',
-      duration: 2000,
-      isClosable: true,
-    });
-  };
+      await database.dances.delete(id);
+      toast({
+        title: 'Success',
+        description: 'Dance deleted',
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
+      });
+    },
+    [toast],
+  );
 
   const columnHelper = createColumnHelper<Dance>();
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -140,7 +143,7 @@ export function Dances() {
       }),
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [dances, deleteDance, editDanceModal, navigate, setJukeboxState],
+    [deleteDance, navigate, setJukeboxState],
   );
 
   const table = useReactTable({

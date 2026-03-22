@@ -66,9 +66,8 @@ const DanceVariantModal: React.FC<DanceVariantModalProps> = ({
   );
   const songs = useLiveQuery(() => database.songs.toArray());
 
-  const currentOnClose = disclosure.onClose;
-  disclosure.onClose = () => {
-    currentOnClose();
+  const handleClose = () => {
+    disclosure.onClose();
     setNewVariant({});
   };
 
@@ -78,7 +77,7 @@ const DanceVariantModal: React.FC<DanceVariantModalProps> = ({
     }
     onSubmit(newVariant);
     setNewVariant({});
-    disclosure.onClose();
+    handleClose();
   };
 
   const loadSongOptions = async (
@@ -94,7 +93,7 @@ const DanceVariantModal: React.FC<DanceVariantModalProps> = ({
   };
 
   return (
-    <Modal isOpen={disclosure.isOpen} onClose={disclosure.onClose}>
+    <Modal isOpen={disclosure.isOpen} onClose={handleClose}>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>New Variant</ModalHeader>
@@ -160,7 +159,7 @@ const DanceVariantModal: React.FC<DanceVariantModalProps> = ({
           <Button colorScheme="blue" mr={3} onClick={() => wrappedOnSubmit()}>
             Save
           </Button>
-          <Button variant="ghost" onClick={disclosure.onClose}>
+          <Button variant="ghost" onClick={handleClose}>
             Cancel
           </Button>
         </ModalFooter>

@@ -20,6 +20,9 @@ export function GlobalNav() {
     case 'songs':
       index = 2;
       break;
+    case 'audio-editor':
+      index = location.search.includes('variantId') ? 1 : 2;
+      break;
     case 'playlists':
       index = 3;
       break;

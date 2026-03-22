@@ -10,7 +10,9 @@ export type Channels =
   | 'exportPlaylist'
   | 'exportDatabase'
   | 'importDatabase'
-  | 'readAudioFile';
+  | 'readAudioFile'
+  | 'saveAudioFile'
+  | 'encodeAndSaveAudio';
 
 const electronHandler = {
   appPath: ipcRenderer.sendSync('getAppPath') as string,

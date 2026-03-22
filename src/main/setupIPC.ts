@@ -2,6 +2,8 @@ import { app, dialog, ipcMain, net } from 'electron';
 import fs from 'fs';
 import path from 'path';
 import os from 'node:os';
+// eslint-disable-next-line import/no-extraneous-dependencies
+import { Mp3Encoder } from '@breezystack/lamejs';
 import { Song } from '../renderer/database';
 
 export const setupIPC = () => {
@@ -172,6 +174,120 @@ export const setupIPC = () => {
       event.reply('importDatabase', { json: content });
     } catch (error) {
       event.reply('importDatabase', { error: String(error) });
+    }
+  });
+
+  ipcMain.on('saveAudioFile', async (event, arg) => {
+    try {
+      const { defaultFileName, buffer, filePath } = arg;
+
+      // Direct overwrite mode — skip save dialog
+      if (filePath) {
+        fs.writeFileSync(filePath, Buffer.from(buffer));
+        event.reply('saveAudioFile', { path: filePath });
+        return;
+      }
+
+      const savePath = dialog.showSaveDialogSync({
+        message: 'Save audio file',
+        defaultPath: defaultFileName ?? 'audio.wav',
+        filters: [{ name: 'WAV Audio', extensions: ['wav'] }],
+      });
+
+      if (savePath) {
+        fs.writeFileSync(savePath, Buffer.from(buffer));
+        event.reply('saveAudioFile', { path: savePath });
+      } else {
+        event.reply('saveAudioFile', { cancelled: true });
+      }
+    } catch (error) {
+      event.reply('saveAudioFile', { error: String(error) });
+    }
+  });
+
+  ipcMain.on('encodeAndSaveAudio', async (event, arg) => {
+    try {
+      const {
+        channelBuffers,
+        sampleRate,
+        numChannels,
+        filePath,
+        defaultFileName,
+      } = arg as {
+        channelBuffers: ArrayBuffer[];
+        sampleRate: number;
+        numChannels: number;
+        filePath?: string;
+        defaultFileName?: string;
+      };
+
+      // Reconstruct Float32Arrays from transferred ArrayBuffers
+      const channels = channelBuffers.map(
+        (buf: ArrayBuffer) => new Float32Array(buf),
+      );
+
+      // Convert float32 to int16 per channel
+      const numSamples = channels[0].length;
+      const int16Channels: Int16Array[] = channels.map((ch) => {
+        const int16 = new Int16Array(numSamples);
+        for (let i = 0; i < numSamples; i += 1) {
+          const sample = Math.max(-1, Math.min(1, ch[i]));
+          int16[i] = Math.round(sample * 0x7fff);
+        }
+        return int16;
+      });
+
+      // Encode MP3 at 192kbps
+      const mp3Encoder = new Mp3Encoder(numChannels, sampleRate, 192);
+      const mp3Parts: Uint8Array[] = [];
+
+      // Encode in chunks of 1152 samples (LAME frame size)
+      const chunkSize = 1152;
+      for (let i = 0; i < numSamples; i += chunkSize) {
+        const leftChunk = int16Channels[0].subarray(i, i + chunkSize);
+        const rightChunk =
+          numChannels > 1
+            ? int16Channels[1].subarray(i, i + chunkSize)
+            : leftChunk;
+        const mp3buf = mp3Encoder.encodeBuffer(leftChunk, rightChunk);
+        if (mp3buf.length > 0) {
+          mp3Parts.push(mp3buf);
+        }
+      }
+
+      const mp3End = mp3Encoder.flush();
+      if (mp3End.length > 0) {
+        mp3Parts.push(mp3End);
+      }
+
+      const totalLength = mp3Parts.reduce((acc, part) => acc + part.length, 0);
+      const mp3Buffer = Buffer.alloc(totalLength);
+      let writeOffset = 0;
+      for (const part of mp3Parts) {
+        mp3Buffer.set(part, writeOffset);
+        writeOffset += part.length;
+      }
+
+      // Save
+      let savePath = filePath ? filePath.replace(/\.\w+$/, '.mp3') : undefined;
+      if (!savePath) {
+        const baseName = (defaultFileName ?? 'audio').replace(/\.\w+$/, '');
+        savePath =
+          dialog.showSaveDialogSync({
+            message: 'Save audio file',
+            defaultPath: `${baseName}.mp3`,
+            filters: [{ name: 'MP3 Audio', extensions: ['mp3'] }],
+          }) || undefined;
+      }
+
+      if (savePath) {
+        fs.writeFileSync(savePath, mp3Buffer);
+        event.reply('encodeAndSaveAudio', { path: savePath });
+      } else {
+        event.reply('encodeAndSaveAudio', { cancelled: true });
+      }
+    } catch (error) {
+      event.reply('encodeAndSaveAudio', { error: String(error) });
     }
   });
 

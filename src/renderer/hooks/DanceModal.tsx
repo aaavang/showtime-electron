@@ -51,9 +51,8 @@ const DanceModal: React.FC<DanceModalProps> = ({ onSubmit, disclosure }) => {
   const [newDance, setNewDance] = useState({} as Partial<NewDance>);
   const songs = useLiveQuery(() => database.songs.toArray());
 
-  const currentOnClose = disclosure.onClose;
-  disclosure.onClose = () => {
-    currentOnClose();
+  const handleClose = () => {
+    disclosure.onClose();
     setNewDance({});
   };
 
@@ -75,7 +74,7 @@ const DanceModal: React.FC<DanceModalProps> = ({ onSubmit, disclosure }) => {
     }
 
     onSubmit(newDance);
-    disclosure.onClose();
+    handleClose();
   };
 
   const loadSongOptions = async (
@@ -91,7 +90,7 @@ const DanceModal: React.FC<DanceModalProps> = ({ onSubmit, disclosure }) => {
   };
 
   return (
-    <Modal isOpen={disclosure.isOpen} onClose={disclosure.onClose}>
+    <Modal isOpen={disclosure.isOpen} onClose={handleClose}>
       <ModalOverlay />
       <ModalContent>
         <ModalHeader>New Dance</ModalHeader>
@@ -140,7 +139,7 @@ const DanceModal: React.FC<DanceModalProps> = ({ onSubmit, disclosure }) => {
           <Button colorScheme="blue" mr={3} onClick={() => wrappedOnSubmit()}>
             Save
           </Button>
-          <Button variant="ghost" onClick={disclosure.onClose}>
+          <Button variant="ghost" onClick={handleClose}>
             Cancel
           </Button>
         </ModalFooter>

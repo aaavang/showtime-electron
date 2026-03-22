@@ -19,8 +19,8 @@ import {
 } from '@chakra-ui/react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import React, { useCallback, useContext, useState } from 'react';
-import { MdAppRegistration, MdDelete, MdStar } from 'react-icons/md';
-import { useParams } from 'react-router-dom';
+import { MdAppRegistration, MdDelete, MdStar, MdTune } from 'react-icons/md';
+import { useNavigate, useParams } from 'react-router-dom';
 import { Page } from '../common/Page';
 import { DanceVariant, database } from '../database';
 import { useDanceVariantModal } from '../hooks/DanceVariantModal';
@@ -28,15 +28,20 @@ import { JukeboxContext } from '../providers/JukeboxProvider';
 
 export function DanceDetails() {
   const toast = useToast();
+  const navigate = useNavigate();
   const danceId = parseInt(useParams().danceId!, 10);
   const dance = useLiveQuery(() => database.dances.get(danceId), [danceId]);
   const danceVariants = useLiveQuery(
     () => database.danceVariants.where('danceId').equals(danceId).toArray(),
     [danceId],
   );
+  const variantSongIds = danceVariants?.map((v) => v.songId).join(',');
   const variantSongs = useLiveQuery(
-    () => database.songs.bulkGet(danceVariants?.map((v) => v.songId) ?? []),
-    [danceVariants],
+    () =>
+      database.songs.bulkGet(
+        variantSongIds?.split(',').map(Number).filter(Boolean) ?? [],
+      ),
+    [variantSongIds],
   );
 
   const { setJukeboxState } = useContext(JukeboxContext);
@@ -208,6 +213,16 @@ export function DanceDetails() {
                             }}
                           >
                             Edit...
+                          </MenuItem>
+                          <MenuItem
+                            icon={<MdTune />}
+                            onClick={() =>
+                              navigate(
+                                `/audio-editor/${variant.songId}?variantId=${variant.id}`,
+                              )
+                            }
+                          >
+                            Edit Audio...
                           </MenuItem>
                           <MenuItem
                             icon={<MdDelete />}
