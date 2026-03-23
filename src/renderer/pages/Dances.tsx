@@ -154,6 +154,7 @@ export function Dances() {
     getFilteredRowModel: getFilteredRowModel(), // client side filtering
     getSortedRowModel: getSortedRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    autoResetPageIndex: false,
     columnResizeMode: 'onChange',
     columnResizeDirection: 'ltr',
     onColumnFiltersChange: setColumnFilters,

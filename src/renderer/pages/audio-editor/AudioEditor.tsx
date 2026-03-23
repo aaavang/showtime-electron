@@ -1,9 +1,12 @@
+import { DeleteIcon } from '@chakra-ui/icons';
 import {
   Box,
   Button,
   FormControl,
   FormLabel,
   HStack,
+  Heading,
+  IconButton,
   Input,
   Modal,
   ModalBody,
@@ -19,7 +22,13 @@ import {
   SliderThumb,
   SliderTrack,
   Spinner,
+  Table,
+  Tbody,
+  Td,
   Text,
+  Th,
+  Thead,
+  Tr,
   VStack,
   useToast,
 } from '@chakra-ui/react';
@@ -35,7 +44,7 @@ import { useInterval } from 'react-use';
 import { GrainPlayer } from 'tone';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { Page } from '../../common/Page';
-import { database } from '../../database';
+import { database, VariantTimestamp } from '../../database';
 import { useSongPathEncoder } from '../../hooks/useSongPathEncoder';
 import { AudioCacheContext } from '../../providers/AudioCacheProvider';
 import { renderOfflineAudio } from '../../utils/renderOfflineAudio';
@@ -67,7 +76,44 @@ export function AudioEditor() {
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(0);
+  const [hasRegion, setHasRegion] = useState(false);
+  const [fadeIn, setFadeIn] = useState(0);
+  const [fadeOut, setFadeOut] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
+
+  type EditorSnapshot = {
+    audioBuffer: AudioBuffer;
+    startTime: number;
+    endTime: number;
+    hasRegion: boolean;
+    fadeIn: number;
+    fadeOut: number;
+  };
+  const undoStackRef = useRef<EditorSnapshot[]>([]);
+
+  const pushUndo = useCallback(() => {
+    if (!audioBuffer) return;
+    undoStackRef.current.push({
+      audioBuffer,
+      startTime,
+      endTime,
+      hasRegion,
+      fadeIn,
+      fadeOut,
+    });
+  }, [audioBuffer, startTime, endTime, hasRegion, fadeIn, fadeOut]);
+
+  const handleUndo = useCallback(() => {
+    const stack = undoStackRef.current;
+    if (stack.length === 0) return;
+    const snapshot = stack.pop()!;
+    setAudioBuffer(snapshot.audioBuffer);
+    setStartTime(snapshot.startTime);
+    setEndTime(snapshot.endTime);
+    setHasRegion(snapshot.hasRegion);
+    setFadeIn(snapshot.fadeIn);
+    setFadeOut(snapshot.fadeOut);
+  }, []);
   const [zoom, setZoom] = useState(0);
   const [title, setTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -77,6 +123,20 @@ export function AudioEditor() {
   const previewPlayerRef = useRef<GrainPlayer | null>(null);
   const previewTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const previewStartRef = useRef({ wallTime: 0, audioTime: 0, rate: 1 });
+
+  const timestamps = useLiveQuery(
+    () =>
+      variantId
+        ? database.variantTimestamps
+            .where('variantId')
+            .equals(variantId)
+            .sortBy('time')
+        : [],
+    [variantId],
+  );
+
+  const [newTsTime, setNewTsTime] = useState(0);
+  const [newTsLabel, setNewTsLabel] = useState('');
 
   const isVariantMode = variantId !== null;
 
@@ -98,7 +158,7 @@ export function AudioEditor() {
     const cached = audioCache.get(src);
     if (cached && cached instanceof AudioBuffer) {
       setAudioBuffer(cached);
-      setEndTime(cached.duration);
+      setEndTime(parseFloat(cached.duration.toFixed(2)));
       return undefined;
     }
 
@@ -116,7 +176,7 @@ export function AudioEditor() {
             : new Uint8Array(event.buffer).buffer;
         const decoded = await ctx.decodeAudioData(buf);
         setAudioBuffer(decoded);
-        setEndTime(decoded.duration);
+        setEndTime(parseFloat(decoded.duration.toFixed(2)));
       } catch (error) {
         toast({
           title: 'Error loading audio',
@@ -139,7 +199,144 @@ export function AudioEditor() {
   const handleRegionChange = useCallback((start: number, end: number) => {
     setStartTime(start);
     setEndTime(end);
+    setHasRegion(true);
   }, []);
+
+  const handleRegionClear = useCallback(() => {
+    if (!audioBuffer) return;
+    setStartTime(0);
+    setEndTime(parseFloat(audioBuffer.duration.toFixed(2)));
+    setHasRegion(false);
+  }, [audioBuffer]);
+
+  const handleDeleteRegion = useCallback(() => {
+    if (!audioBuffer || !hasRegion) return;
+    if (endTime <= startTime) return;
+
+    pushUndo();
+
+    const { sampleRate } = audioBuffer;
+    const numChannels = audioBuffer.numberOfChannels;
+    const beforeSamples = Math.floor(startTime * sampleRate);
+    const afterStart = Math.ceil(endTime * sampleRate);
+    const afterSamples = audioBuffer.length - afterStart;
+    const newLength = beforeSamples + Math.max(afterSamples, 0);
+
+    if (newLength <= 0) return;
+
+    const newBuffer = new AudioContext().createBuffer(
+      numChannels,
+      newLength,
+      sampleRate,
+    );
+
+    for (let ch = 0; ch < numChannels; ch += 1) {
+      const oldData = audioBuffer.getChannelData(ch);
+      const newData = newBuffer.getChannelData(ch);
+      // Copy audio before the region
+      newData.set(oldData.subarray(0, beforeSamples));
+      // Copy audio after the region
+      if (afterSamples > 0) {
+        newData.set(oldData.subarray(afterStart), beforeSamples);
+      }
+    }
+
+    // Adjust fade in: if deleted region overlaps [0, fadeIn], shrink it
+    let newFadeIn = fadeIn;
+    if (fadeIn > 0) {
+      if (startTime < fadeIn) {
+        // Overlap: remove the portion of fade-in that was deleted
+        const overlap = Math.min(endTime, fadeIn) - startTime;
+        newFadeIn = Math.max(parseFloat((fadeIn - overlap).toFixed(2)), 0);
+      }
+      // If deleted region is entirely after fade in, no change
+    }
+
+    // Adjust fade out: if deleted region overlaps [oldDuration - fadeOut, oldDuration], shrink it
+    const oldDuration = audioBuffer.duration;
+    let newFadeOut = fadeOut;
+    if (fadeOut > 0) {
+      const fadeOutStart = oldDuration - fadeOut;
+      if (endTime > fadeOutStart) {
+        // Overlap: remove the portion of fade-out that was deleted
+        const overlap = endTime - Math.max(startTime, fadeOutStart);
+        newFadeOut = Math.max(parseFloat((fadeOut - overlap).toFixed(2)), 0);
+      }
+      // If deleted region is entirely before fade out, duration offset stays the same
+    }
+
+    setAudioBuffer(newBuffer);
+    setStartTime(0);
+    setEndTime(parseFloat(newBuffer.duration.toFixed(2)));
+    setHasRegion(false);
+    setFadeIn(newFadeIn);
+    setFadeOut(newFadeOut);
+  }, [audioBuffer, hasRegion, startTime, endTime, fadeIn, fadeOut, pushUndo]);
+
+  const handleTrimToSelection = useCallback(() => {
+    if (!audioBuffer || !hasRegion) return;
+    if (endTime <= startTime) return;
+
+    pushUndo();
+
+    const { sampleRate } = audioBuffer;
+    const numChannels = audioBuffer.numberOfChannels;
+    const startSample = Math.floor(startTime * sampleRate);
+    const endSample = Math.ceil(endTime * sampleRate);
+    const newLength = endSample - startSample;
+
+    if (newLength <= 0) return;
+
+    const newBuffer = new AudioContext().createBuffer(
+      numChannels,
+      newLength,
+      sampleRate,
+    );
+
+    for (let ch = 0; ch < numChannels; ch += 1) {
+      const oldData = audioBuffer.getChannelData(ch);
+      newBuffer
+        .getChannelData(ch)
+        .set(oldData.subarray(startSample, endSample));
+    }
+
+    // Adjust fades: clamp to what fits within the trimmed region
+    const trimmedDuration = newBuffer.duration;
+    let newFadeIn = fadeIn > 0 ? Math.max(fadeIn - startTime, 0) : 0;
+    const oldDuration = audioBuffer.duration;
+    let newFadeOut =
+      fadeOut > 0 ? Math.max(fadeOut - (oldDuration - endTime), 0) : 0;
+    // Prevent overlap
+    if (newFadeIn + newFadeOut > trimmedDuration) {
+      const ratio = trimmedDuration / (newFadeIn + newFadeOut);
+      newFadeIn = parseFloat((newFadeIn * ratio).toFixed(2));
+      newFadeOut = parseFloat((newFadeOut * ratio).toFixed(2));
+    } else {
+      newFadeIn = parseFloat(newFadeIn.toFixed(2));
+      newFadeOut = parseFloat(newFadeOut.toFixed(2));
+    }
+
+    setAudioBuffer(newBuffer);
+    setStartTime(0);
+    setEndTime(parseFloat(trimmedDuration.toFixed(2)));
+    setHasRegion(false);
+    setFadeIn(newFadeIn);
+    setFadeOut(newFadeOut);
+  }, [audioBuffer, hasRegion, startTime, endTime, fadeIn, fadeOut, pushUndo]);
+
+  const handleMarkFadeIn = useCallback(() => {
+    if (!hasRegion || !audioBuffer) return;
+    const duration = parseFloat((endTime - startTime).toFixed(2));
+    const maxAllowed = audioBuffer.duration - fadeOut;
+    if (duration > 0) setFadeIn(Math.min(duration, maxAllowed));
+  }, [hasRegion, audioBuffer, startTime, endTime, fadeOut]);
+
+  const handleMarkFadeOut = useCallback(() => {
+    if (!hasRegion || !audioBuffer) return;
+    const duration = parseFloat((endTime - startTime).toFixed(2));
+    const maxAllowed = audioBuffer.duration - fadeIn;
+    if (duration > 0) setFadeOut(Math.min(duration, maxAllowed));
+  }, [hasRegion, audioBuffer, startTime, endTime, fadeIn]);
 
   // --- Preview ---
 
@@ -157,7 +354,7 @@ export function AudioEditor() {
     setPreviewTime(undefined);
   }, []);
 
-  const handlePreview = useCallback(() => {
+  const handlePreview = useCallback(async () => {
     if (isPreviewing) {
       stopPreview();
       return;
@@ -165,16 +362,30 @@ export function AudioEditor() {
 
     if (!audioBuffer) return;
 
+    const regionDuration = endTime - startTime;
+    if (regionDuration <= 0) return;
+
+    // Render with fades and playback rate baked in
+    const rendered = await renderOfflineAudio({
+      sourceBuffer: audioBuffer,
+      startTime,
+      endTime,
+      playbackRate,
+      fadeIn,
+      fadeOut,
+    });
+
+    // Play the rendered buffer at rate 1.0 (everything is already baked in)
     const player = new GrainPlayer({
-      url: audioBuffer,
+      url: rendered,
       grainSize: 0.05,
       overlap: 0.05,
     });
-    player.playbackRate = playbackRate;
+    player.playbackRate = 1;
     player.toDestination();
 
-    const regionDuration = endTime - startTime;
-    player.start(undefined, startTime, regionDuration);
+    const outputDuration = rendered.duration;
+    player.start(undefined, 0, outputDuration);
     previewPlayerRef.current = player;
     setIsPreviewing(true);
     setPreviewTime(startTime);
@@ -184,7 +395,7 @@ export function AudioEditor() {
       rate: playbackRate,
     };
 
-    const timeoutMs = (regionDuration / playbackRate) * 1000;
+    const timeoutMs = outputDuration * 1000;
     previewTimeoutRef.current = setTimeout(() => {
       stopPreview();
     }, timeoutMs + 100);
@@ -193,6 +404,8 @@ export function AudioEditor() {
     startTime,
     endTime,
     playbackRate,
+    fadeIn,
+    fadeOut,
     isPreviewing,
     stopPreview,
   ]);
@@ -223,17 +436,70 @@ export function AudioEditor() {
     };
   }, []);
 
-  // Spacebar to toggle preview
+  // Keyboard shortcuts
   const handlePreviewRef = useRef(handlePreview);
   handlePreviewRef.current = handlePreview;
+  const handleUndoRef = useRef(handleUndo);
+  handleUndoRef.current = handleUndo;
+  const handleRegionClearRef = useRef(handleRegionClear);
+  handleRegionClearRef.current = handleRegionClear;
+  const handleDeleteRegionRef = useRef(handleDeleteRegion);
+  handleDeleteRegionRef.current = handleDeleteRegion;
+  const handleTrimRef = useRef(handleTrimToSelection);
+  handleTrimRef.current = handleTrimToSelection;
+  const handleMarkFadeInRef = useRef(handleMarkFadeIn);
+  handleMarkFadeInRef.current = handleMarkFadeIn;
+  const handleMarkFadeOutRef = useRef(handleMarkFadeOut);
+  handleMarkFadeOutRef.current = handleMarkFadeOut;
+  const playbackRateRef = useRef(playbackRate);
+  playbackRateRef.current = playbackRate;
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Don't trigger when typing in an input
+      // Cmd/Ctrl+Z works even in inputs
+      if ((e.metaKey || e.ctrlKey) && e.key === 'z') {
+        e.preventDefault();
+        handleUndoRef.current();
+        return;
+      }
+      // Don't trigger other shortcuts when typing in an input
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      if (e.key === ' ') {
-        e.preventDefault();
-        handlePreviewRef.current();
+      switch (e.key) {
+        case ' ':
+          e.preventDefault();
+          handlePreviewRef.current();
+          break;
+        case 'Escape':
+          handleRegionClearRef.current();
+          break;
+        case 'Delete':
+        case 'Backspace':
+          e.preventDefault();
+          handleDeleteRegionRef.current();
+          break;
+        case 't':
+          handleTrimRef.current();
+          break;
+        case 'i':
+          handleMarkFadeInRef.current();
+          break;
+        case 'o':
+          handleMarkFadeOutRef.current();
+          break;
+        case '[':
+          setPlaybackRate(
+            parseFloat(
+              Math.max(playbackRateRef.current - 0.05, 0.5).toFixed(2),
+            ),
+          );
+          break;
+        case ']':
+          setPlaybackRate(
+            parseFloat(Math.min(playbackRateRef.current + 0.05, 4).toFixed(2)),
+          );
+          break;
+        default:
+          break;
       }
     };
     window.addEventListener('keydown', handler);
@@ -355,6 +621,8 @@ export function AudioEditor() {
         startTime,
         endTime,
         playbackRate,
+        fadeIn,
+        fadeOut,
       });
 
       setSaveStatus('Encoding & saving...');
@@ -441,6 +709,8 @@ export function AudioEditor() {
     startTime,
     endTime,
     playbackRate,
+    fadeIn,
+    fadeOut,
     song,
     title,
     encodeAndSaveViaIPC,
@@ -503,10 +773,15 @@ export function AudioEditor() {
               audioBuffer={audioBuffer}
               startTime={startTime}
               endTime={endTime}
+              hasRegion={hasRegion}
               onRegionChange={handleRegionChange}
+              onRegionClear={handleRegionClear}
               zoom={zoom}
               onZoomChange={setZoom}
               currentTime={previewTime}
+              timestamps={timestamps}
+              fadeIn={fadeIn}
+              fadeOut={fadeOut}
             />
             <FormControl>
               <FormLabel>Zoom</FormLabel>
@@ -525,7 +800,7 @@ export function AudioEditor() {
           </Box>
         )}
 
-        {/* Controls */}
+        {/* Selection controls */}
         <HStack spacing={4} align="end">
           <FormControl w="120px" flexShrink={0}>
             <FormLabel fontSize="xs">Start (s)</FormLabel>
@@ -537,7 +812,10 @@ export function AudioEditor() {
               precision={2}
               value={startTime}
               onChange={(_, val) => {
-                if (!Number.isNaN(val)) setStartTime(val);
+                if (!Number.isNaN(val)) {
+                  setStartTime(val);
+                  setHasRegion(true);
+                }
               }}
             >
               <NumberInputField />
@@ -558,7 +836,10 @@ export function AudioEditor() {
               precision={2}
               value={endTime}
               onChange={(_, val) => {
-                if (!Number.isNaN(val)) setEndTime(val);
+                if (!Number.isNaN(val)) {
+                  setEndTime(val);
+                  setHasRegion(true);
+                }
               }}
             >
               <NumberInputField />
@@ -569,6 +850,118 @@ export function AudioEditor() {
             </NumberInput>
           </FormControl>
 
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleRegionClear}
+            isDisabled={!hasRegion}
+            title="Esc"
+          >
+            Clear Selection (Esc)
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            colorScheme="red"
+            onClick={handleDeleteRegion}
+            isDisabled={!hasRegion}
+            title="Delete / Backspace"
+          >
+            Delete Region (Del)
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            colorScheme="teal"
+            onClick={handleTrimToSelection}
+            isDisabled={!hasRegion}
+            title="T"
+          >
+            Trim to Selection (T)
+          </Button>
+
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleUndo}
+            isDisabled={undoStackRef.current.length === 0}
+            title="Cmd/Ctrl+Z"
+          >
+            Undo ({'\u2318'}Z)
+          </Button>
+        </HStack>
+
+        {/* Fade controls */}
+        <HStack spacing={4} align="end">
+          <FormControl w="120px" flexShrink={0}>
+            <FormLabel fontSize="xs">Fade In (s)</FormLabel>
+            <NumberInput
+              size="sm"
+              min={0}
+              max={Math.max((audioBuffer?.duration ?? 0) - fadeOut, 0)}
+              step={0.5}
+              precision={1}
+              value={fadeIn}
+              onChange={(_, val) => {
+                if (!Number.isNaN(val)) setFadeIn(val);
+              }}
+            >
+              <NumberInputField />
+              <NumberInputStepper>
+                <NumberIncrementStepper />
+                <NumberDecrementStepper />
+              </NumberInputStepper>
+            </NumberInput>
+          </FormControl>
+
+          <Button
+            size="sm"
+            colorScheme="green"
+            variant="outline"
+            onClick={handleMarkFadeIn}
+            isDisabled={!hasRegion}
+            title="I"
+          >
+            Mark as Fade In (I)
+          </Button>
+
+          <FormControl w="120px" flexShrink={0}>
+            <FormLabel fontSize="xs">Fade Out (s)</FormLabel>
+            <NumberInput
+              size="sm"
+              min={0}
+              max={Math.max((audioBuffer?.duration ?? 0) - fadeIn, 0)}
+              step={0.5}
+              precision={1}
+              value={fadeOut}
+              onChange={(_, val) => {
+                if (!Number.isNaN(val)) setFadeOut(val);
+              }}
+            >
+              <NumberInputField />
+              <NumberInputStepper>
+                <NumberIncrementStepper />
+                <NumberDecrementStepper />
+              </NumberInputStepper>
+            </NumberInput>
+          </FormControl>
+
+          <Button
+            size="sm"
+            colorScheme="purple"
+            variant="outline"
+            onClick={handleMarkFadeOut}
+            isDisabled={!hasRegion}
+            title="O"
+          >
+            Mark as Fade Out (O)
+          </Button>
+        </HStack>
+
+        {/* Playback controls */}
+        <HStack spacing={4} align="end">
           <HStack flexShrink={0}>
             <Button
               size="sm"
@@ -614,6 +1007,125 @@ export function AudioEditor() {
             Save
           </Button>
         </HStack>
+        {/* Timestamps */}
+        {isVariantMode && variantId && (
+          <Box>
+            <Heading size="sm" mb={2}>
+              Timestamps
+            </Heading>
+            {timestamps && timestamps.length > 0 && (
+              <Table size="sm" mb={3}>
+                <Thead>
+                  <Tr>
+                    <Th>Time</Th>
+                    <Th>Label</Th>
+                    <Th w="40px" />
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {timestamps.map((ts: VariantTimestamp) => (
+                    <Tr key={ts.id}>
+                      <Td fontFamily="mono" w="80px">
+                        {`${Math.floor(ts.time / 60)}:${Math.round(ts.time % 60)
+                          .toString()
+                          .padStart(2, '0')}`}
+                      </Td>
+                      <Td>
+                        <Input
+                          size="sm"
+                          variant="flushed"
+                          defaultValue={ts.label}
+                          onBlur={(e) => {
+                            const val = e.target.value.trim();
+                            if (val && val !== ts.label) {
+                              database.variantTimestamps.update(ts.id, {
+                                label: val,
+                              });
+                            }
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter')
+                              (e.target as HTMLInputElement).blur();
+                          }}
+                        />
+                      </Td>
+                      <Td>
+                        <IconButton
+                          aria-label="Delete timestamp"
+                          icon={<DeleteIcon />}
+                          size="xs"
+                          variant="ghost"
+                          colorScheme="red"
+                          onClick={() =>
+                            database.variantTimestamps.delete(ts.id)
+                          }
+                        />
+                      </Td>
+                    </Tr>
+                  ))}
+                </Tbody>
+              </Table>
+            )}
+            <HStack spacing={2}>
+              <FormControl w="100px" flexShrink={0}>
+                <FormLabel fontSize="xs">Time (s)</FormLabel>
+                <NumberInput
+                  size="sm"
+                  min={0}
+                  max={audioBuffer?.duration ?? 0}
+                  step={0.1}
+                  precision={2}
+                  value={newTsTime}
+                  onChange={(_, val) => {
+                    if (!Number.isNaN(val)) setNewTsTime(val);
+                  }}
+                >
+                  <NumberInputField />
+                  <NumberInputStepper>
+                    <NumberIncrementStepper />
+                    <NumberDecrementStepper />
+                  </NumberInputStepper>
+                </NumberInput>
+              </FormControl>
+              <FormControl flexGrow={1}>
+                <FormLabel fontSize="xs">Label</FormLabel>
+                <Input
+                  size="sm"
+                  value={newTsLabel}
+                  onChange={(e) => setNewTsLabel(e.target.value)}
+                  placeholder="e.g. Chorus, Bridge"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && newTsLabel.trim()) {
+                      database.variantTimestamps.add({
+                        variantId,
+                        time: newTsTime,
+                        label: newTsLabel.trim(),
+                      } as any);
+                      setNewTsLabel('');
+                    }
+                  }}
+                />
+              </FormControl>
+              <Button
+                size="sm"
+                colorScheme="purple"
+                mt="auto"
+                onClick={() => {
+                  if (!newTsLabel.trim()) return;
+                  database.variantTimestamps.add({
+                    variantId,
+                    time: newTsTime,
+                    label: newTsLabel.trim(),
+                  } as any);
+                  setNewTsLabel('');
+                }}
+                isDisabled={!newTsLabel.trim()}
+              >
+                Add
+              </Button>
+            </HStack>
+          </Box>
+        )}
       </VStack>
 
       {/* Save progress modal */}

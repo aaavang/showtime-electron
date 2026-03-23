@@ -32,12 +32,20 @@ export type PlaylistDance = {
   order: string;
 };
 
+export type VariantTimestamp = {
+  id: number;
+  variantId: number;
+  time: number;
+  label: string;
+};
+
 export const database = new Dexie('showtime') as Dexie & {
   songs: EntityTable<Song, 'id'>;
   dances: EntityTable<Dance, 'id'>;
   danceVariants: EntityTable<DanceVariant, 'id'>;
   playlists: EntityTable<Playlist, 'id'>;
   playlistDances: EntityTable<PlaylistDance, 'id'>;
+  variantTimestamps: EntityTable<VariantTimestamp, 'id'>;
 };
 
 database.version(1).stores({
@@ -46,6 +54,15 @@ database.version(1).stores({
   playlists: '++id, title',
   danceVariants: '++id, title, danceId, songId',
   playlistDances: '++id, playlistId, danceVariantId, order',
+});
+
+database.version(2).stores({
+  songs: '++id, title, path',
+  dances: '++id, title, defaultSongId',
+  playlists: '++id, title',
+  danceVariants: '++id, title, danceId, songId',
+  playlistDances: '++id, playlistId, danceVariantId, order',
+  variantTimestamps: '++id, variantId, time',
 });
 
 database.open().catch((error) => {

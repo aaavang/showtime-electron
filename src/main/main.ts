@@ -26,6 +26,8 @@ class AppUpdater {
 
 let mainWindow: BrowserWindow | null = null;
 
+app.commandLine.appendSwitch('remote-debugging-port', '8315');
+
 setupIPC();
 
 if (process.env.NODE_ENV === 'production') {

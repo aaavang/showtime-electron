@@ -110,6 +110,7 @@ export function Playlists() {
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(), // client side filtering
     getPaginationRowModel: getPaginationRowModel(),
+    autoResetPageIndex: false,
     columnResizeMode: 'onChange',
     columnResizeDirection: 'ltr',
     onColumnFiltersChange: setColumnFilters,

@@ -28,7 +28,8 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { Dance, DanceVariant, Song } from '../database';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { Dance, DanceVariant, database, Song } from '../database';
 import { AudioPlayer } from '../pages/AudioPlayerTone';
 import { UserSettingsContext } from '../providers/UserSettingsProvider';
 import { HydratedDanceVariant } from './SelectDanceModal';
@@ -102,6 +103,16 @@ function Jukebox({ state, setState, initialFocusRef }: JukeboxProps) {
   const [userSettings] = useContext(UserSettingsContext);
   const songPathEncoder = useSongPathEncoder();
   const isPlayingRef = useRef(false);
+  const timestamps = useLiveQuery(
+    () =>
+      state.variant?.id
+        ? database.variantTimestamps
+            .where('variantId')
+            .equals(state.variant.id)
+            .sortBy('time')
+        : [],
+    [state.variant?.id],
+  );
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null);
   const guardCancelRef = useRef<HTMLButtonElement>(null);
 
@@ -285,6 +296,8 @@ function Jukebox({ state, setState, initialFocusRef }: JukeboxProps) {
         src={songPathEncoder(state.song)}
         onEnd={onEnd}
         isPlayingRef={isPlayingRef}
+        timestamps={timestamps}
+        variantId={state.variant?.id}
       />
       <AlertDialog
         isOpen={pendingAction !== null}

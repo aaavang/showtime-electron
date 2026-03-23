@@ -5,17 +5,30 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogOverlay,
+  Badge,
   Button,
+  FormControl,
+  FormLabel,
   HStack,
+  Input,
   Kbd,
+  Modal,
+  ModalBody,
+  ModalCloseButton,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalOverlay,
   Progress,
   Text,
+  useDisclosure,
   useToast,
   VStack,
 } from '@chakra-ui/react';
-import React, { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useInterval } from 'react-use';
 import { GrainPlayer } from 'tone';
+import { database, VariantTimestamp } from '../database';
 import { AudioCacheContext } from '../providers/AudioCacheProvider';
 import { UserSettingsContext } from '../providers/UserSettingsProvider';
 import { JukeboxContext } from '../providers/JukeboxProvider';
@@ -27,6 +40,8 @@ export type AudioPlayerProps = {
   initialFocusRef?: any;
   showMode?: boolean;
   isPlayingRef?: React.MutableRefObject<boolean>;
+  timestamps?: VariantTimestamp[];
+  variantId?: number;
 };
 
 type ToneState = {
@@ -46,16 +61,32 @@ export function AudioPlayer(props: AudioPlayerProps) {
   const [currentTime, setCurrentTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showPauseConfirm, setShowPauseConfirm] = useState(false);
+  const [showFadeConfirm, setShowFadeConfirm] = useState(false);
   const [rate, setRate] = useState(1);
+  const [volume, setVolume] = useState(100);
   const [tone, setTone] = useState<ToneState | null>(null);
+  const [activeTimestampIndex, setActiveTimestampIndex] = useState(-1);
+  const [tsScrollOffset, setTsScrollOffset] = useState<number | null>(null);
+  const [capturedTime, setCapturedTime] = useState(0);
+  const [timestampLabel, setTimestampLabel] = useState('');
+  const timestampModal = useDisclosure();
+  const timestampInputRef = useRef<HTMLInputElement>(null);
   const pauseCancelRef = useRef<HTMLButtonElement>(null);
+  const fadeCancelRef = useRef<HTMLButtonElement>(null);
+
+  const sortedTimestamps = useMemo(
+    () => (props.timestamps ?? []).slice().sort((a, b) => a.time - b.time),
+    [props.timestamps],
+  );
   const toneRef = useRef<ToneState | null>(null);
   toneRef.current = tone;
   const playbackRef = useRef({ startOffset: 0, startTime: 0 });
   const fadeVolumeRef = useRef(1);
   const rateRef = useRef(rate);
+  const volumeRef = useRef(volume);
   const isPlayingRef = useRef(isPlaying);
   rateRef.current = rate;
+  volumeRef.current = volume;
   isPlayingRef.current = isPlaying;
 
   const getPosition = () => {
@@ -140,7 +171,7 @@ export function AudioPlayer(props: AudioPlayerProps) {
   useEffect(() => {
     if (tone && autoPlay && userSettings.enableFineGrainAutoplay) {
       fadeVolumeRef.current = 1;
-      tone.player.volume.value = 0;
+      tone.player.volume.value = linearToDb(volumeRef.current / 100);
       playbackRef.current = { startOffset: 0, startTime: nowSec() };
       tone.player.start(undefined, 0);
       setIsPlaying(true);
@@ -152,6 +183,13 @@ export function AudioPlayer(props: AudioPlayerProps) {
       props.isPlayingRef.current = isPlaying;
     }
   }, [isPlaying, props.isPlayingRef]);
+
+  // Volume change: apply user volume scaled by fade volume
+  useEffect(() => {
+    if (!tone) return;
+    const effectiveVolume = (volume / 100) * fadeVolumeRef.current;
+    tone.player.volume.value = linearToDb(effectiveVolume);
+  }, [volume, tone]);
 
   // Rate change: GrainPlayer handles pitch preservation natively
   useEffect(() => {
@@ -188,14 +226,15 @@ export function AudioPlayer(props: AudioPlayerProps) {
   const doPause = () => {
     if (!tone) return;
     playbackRef.current.startOffset = getPosition();
+    tone.player.volume.value = -100;
     tone.player.stop();
     setIsPlaying(false);
   };
 
   const doPlay = () => {
     if (!tone) return;
-    fadeVolumeRef.current = 1;
-    tone.player.volume.value = 0;
+    const effectiveVolume = (volumeRef.current / 100) * fadeVolumeRef.current;
+    tone.player.volume.value = linearToDb(effectiveVolume);
     playbackRef.current.startTime = nowSec();
     tone.player.start(undefined, playbackRef.current.startOffset);
     setIsPlaying(true);
@@ -218,6 +257,9 @@ export function AudioPlayer(props: AudioPlayerProps) {
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
+      // Don't handle hotkeys when interacting with form elements
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
       switch (e.key) {
         case ' ':
           e.preventDefault();
@@ -228,6 +270,18 @@ export function AudioPlayer(props: AudioPlayerProps) {
           break;
         case ']':
           handleIncreaseRate();
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          setVolume((v) => Math.min(v + 5, 150));
+          break;
+        case 'ArrowDown':
+          e.preventDefault();
+          setVolume((v) => Math.max(v - 5, 0));
+          break;
+        case 't':
+        case 'T':
+          handleCaptureTimestamp();
           break;
         case 'Escape':
           if (!props.showMode) {
@@ -259,19 +313,21 @@ export function AudioPlayer(props: AudioPlayerProps) {
         setCurrentTime(0);
         playbackRef.current = { startOffset: 0, startTime: 0 };
         fadeVolumeRef.current = 1;
-        tone.player.volume.value = 0;
+        tone.player.volume.value = linearToDb(volumeRef.current / 100);
         onEnd();
       } else if (isPlaying) {
         fadeVolumeRef.current = parseFloat(
           Math.max(0, fadeVolumeRef.current - 0.1).toFixed(1),
         );
-        tone.player.volume.value = linearToDb(fadeVolumeRef.current);
+        const effectiveVolume =
+          (volumeRef.current / 100) * fadeVolumeRef.current;
+        tone.player.volume.value = linearToDb(effectiveVolume);
       }
     },
     isFading ? 250 : null,
   );
 
-  // Position tracking + end detection
+  // Position tracking + end detection + active timestamp
   useInterval(() => {
     if (isPlaying && tone) {
       const pos = getPosition();
@@ -282,6 +338,17 @@ export function AudioPlayer(props: AudioPlayerProps) {
         setCurrentTime(0);
         playbackRef.current = { startOffset: 0, startTime: 0 };
         onEnd();
+      }
+      // Find the last timestamp at or before the current position
+      if (sortedTimestamps.length > 0) {
+        let idx = -1;
+        for (let i = sortedTimestamps.length - 1; i >= 0; i -= 1) {
+          if (sortedTimestamps[i].time <= pos) {
+            idx = i;
+            break;
+          }
+        }
+        setActiveTimestampIndex(idx);
       }
     }
   }, 100);
@@ -313,7 +380,7 @@ export function AudioPlayer(props: AudioPlayerProps) {
     document.getElementById('reset-button')?.blur();
   };
 
-  const handleFade = () => {
+  const doFade = () => {
     toast({
       title: 'Fading out',
       status: 'info',
@@ -324,15 +391,63 @@ export function AudioPlayer(props: AudioPlayerProps) {
     document.getElementById('fade-button')?.blur();
   };
 
+  const handleFade = () => {
+    if (props.showMode) {
+      setShowFadeConfirm(true);
+    } else {
+      doFade();
+    }
+  };
+
+  const handleCaptureTimestamp = () => {
+    if (!props.variantId || props.showMode) return;
+    setCapturedTime(parseFloat(getPosition().toFixed(2)));
+    setTimestampLabel('');
+    timestampModal.onOpen();
+  };
+
+  const handleSaveTimestamp = async () => {
+    if (!props.variantId || !timestampLabel.trim()) return;
+    await database.variantTimestamps.add({
+      variantId: props.variantId,
+      time: capturedTime,
+      label: timestampLabel.trim(),
+    } as any);
+    timestampModal.onClose();
+    toast({
+      title: 'Timestamp saved',
+      status: 'success',
+      duration: 2000,
+      isClosable: true,
+    });
+  };
+
+  const seekToTimestamp = (time: number) => {
+    if (props.showMode || !tone) return;
+    if (isPlaying) {
+      tone.player.stop();
+      playbackRef.current = { startOffset: time, startTime: nowSec() };
+      tone.player.start(undefined, time);
+    } else {
+      playbackRef.current.startOffset = time;
+    }
+    setCurrentTime(time);
+    // Reset scroll offset so auto-follow resumes
+    setTsScrollOffset(null);
+  };
+
   const duration = tone?.duration ?? 0;
   const isLoaded = tone !== null;
   return (
     <VStack w="100%">
-      <pre>
-        {isLoaded
-          ? `${formatSecondsToLabel(currentTime)}/${formatSecondsToLabel(duration)}`
-          : '--:--/--:--'}
-      </pre>
+      <HStack w="100%" justifyContent="space-between">
+        <pre>
+          {isLoaded
+            ? `${formatSecondsToLabel(currentTime)}/${formatSecondsToLabel(duration)}`
+            : '--:--/--:--'}
+        </pre>
+        <pre>{`Vol: ${volume}%`}</pre>
+      </HStack>
       <Progress
         cursor="pointer"
         hasStripe
@@ -351,12 +466,75 @@ export function AudioPlayer(props: AudioPlayerProps) {
           setCurrentTime(seekPos);
         }}
       />
+      {sortedTimestamps.length > 0 &&
+        (() => {
+          const active = activeTimestampIndex;
+          // Use manual scroll offset if set, otherwise auto-follow playback
+          let windowStart: number;
+          if (tsScrollOffset !== null) {
+            windowStart = tsScrollOffset;
+          } else if (active < 0) {
+            windowStart = 0;
+          } else if (active === 0) {
+            windowStart = 0;
+          } else {
+            windowStart = Math.min(active - 1, sortedTimestamps.length - 3);
+          }
+          windowStart = Math.max(
+            0,
+            Math.min(windowStart, sortedTimestamps.length - 3),
+          );
+          const visible = sortedTimestamps.slice(windowStart, windowStart + 3);
+          const canScrollLeft = windowStart > 0;
+          const canScrollRight = windowStart + 3 < sortedTimestamps.length;
+          return (
+            <HStack spacing={2} justifyContent="center">
+              <Button
+                size="xs"
+                variant="ghost"
+                isDisabled={!canScrollLeft}
+                onClick={() => setTsScrollOffset(windowStart - 1)}
+              >
+                &lsaquo;
+              </Button>
+              {visible.map((ts) => {
+                const idx = sortedTimestamps.indexOf(ts);
+                const isCurrent = idx === active;
+                return (
+                  <Text
+                    key={ts.id}
+                    fontSize="sm"
+                    color={isCurrent ? 'white' : 'gray.500'}
+                    fontWeight={isCurrent ? 'bold' : 'normal'}
+                    cursor={props.showMode ? 'default' : 'pointer'}
+                    onClick={() => seekToTimestamp(ts.time)}
+                    _hover={
+                      props.showMode ? {} : { textDecoration: 'underline' }
+                    }
+                  >
+                    {formatSecondsToLabel(ts.time)} {ts.label}
+                  </Text>
+                );
+              })}
+              <Button
+                size="xs"
+                variant="ghost"
+                isDisabled={!canScrollRight}
+                onClick={() => setTsScrollOffset(windowStart + 1)}
+              >
+                &rsaquo;
+              </Button>
+            </HStack>
+          );
+        })()}
       <HStack w="100%" justifyContent="space-between">
         <Button
           ref={props.initialFocusRef}
           id="play-pause-button"
           onClick={handlePlayPause}
           colorScheme="green"
+          size="lg"
+          w="120px"
         >
           {isPlaying ? 'Pause' : 'Play'}
         </Button>
@@ -368,6 +546,16 @@ export function AudioPlayer(props: AudioPlayerProps) {
         >
           Fade out (2.5 secs)
         </Button>
+        {!props.showMode && props.variantId && (
+          <Button
+            size="sm"
+            colorScheme="purple"
+            variant="outline"
+            onClick={handleCaptureTimestamp}
+          >
+            Add Timestamp
+          </Button>
+        )}
         <Button
           id="reset-button"
           onClick={handleRestart}
@@ -398,11 +586,18 @@ export function AudioPlayer(props: AudioPlayerProps) {
         </HStack>
       )}
       <Text>
-        Press <Kbd>Space</Kbd> to Play/Pause
+        Press <Kbd>Space</Kbd> to Play/Pause | <Kbd>&uarr;</Kbd> /{' '}
+        <Kbd>&darr;</Kbd> volume
         {!props.showMode && (
           <>
             {' '}
-            | <Kbd>[</Kbd> / <Kbd>]</Kbd> to adjust speed
+            | <Kbd>[</Kbd> / <Kbd>]</Kbd> speed
+          </>
+        )}
+        {!props.showMode && props.variantId && (
+          <>
+            {' '}
+            | <Kbd>T</Kbd> timestamp
           </>
         )}
       </Text>
@@ -438,6 +633,84 @@ export function AudioPlayer(props: AudioPlayerProps) {
           </AlertDialogContent>
         </AlertDialogOverlay>
       </AlertDialog>
+      <AlertDialog
+        isOpen={showFadeConfirm}
+        leastDestructiveRef={fadeCancelRef}
+        onClose={() => setShowFadeConfirm(false)}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader>Fade Out</AlertDialogHeader>
+            <AlertDialogBody>
+              We are running a show! Are you sure you want to fade out?
+            </AlertDialogBody>
+            <AlertDialogFooter>
+              <Button
+                ref={fadeCancelRef}
+                onClick={() => setShowFadeConfirm(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                colorScheme="red"
+                onClick={() => {
+                  setShowFadeConfirm(false);
+                  doFade();
+                }}
+                ml={3}
+              >
+                Fade Out
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
+      <Modal
+        isOpen={timestampModal.isOpen}
+        onClose={timestampModal.onClose}
+        initialFocusRef={timestampInputRef}
+        size="sm"
+      >
+        <ModalOverlay />
+        <ModalContent>
+          <ModalHeader>Add Timestamp</ModalHeader>
+          <ModalCloseButton />
+          <ModalBody>
+            <VStack spacing={3}>
+              <Text>
+                Time: <strong>{formatSecondsToLabel(capturedTime)}</strong> (
+                {capturedTime}s)
+              </Text>
+              <FormControl>
+                <FormLabel>Label</FormLabel>
+                <Input
+                  ref={timestampInputRef}
+                  value={timestampLabel}
+                  onChange={(e) => setTimestampLabel(e.target.value)}
+                  placeholder="e.g. Chorus, Bridge, Spin"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') handleSaveTimestamp();
+                    e.stopPropagation();
+                  }}
+                  onKeyUp={(e) => e.stopPropagation()}
+                />
+              </FormControl>
+            </VStack>
+          </ModalBody>
+          <ModalFooter>
+            <Button mr={3} onClick={timestampModal.onClose}>
+              Cancel
+            </Button>
+            <Button
+              colorScheme="purple"
+              onClick={handleSaveTimestamp}
+              isDisabled={!timestampLabel.trim()}
+            >
+              Save
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </VStack>
   );
 }
