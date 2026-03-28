@@ -507,7 +507,10 @@ export function AudioPlayer(props: AudioPlayerProps) {
                     color={isCurrent ? 'white' : 'gray.500'}
                     fontWeight={isCurrent ? 'bold' : 'normal'}
                     cursor={props.showMode ? 'default' : 'pointer'}
-                    onClick={() => seekToTimestamp(ts.time)}
+                    onClick={() => {
+                      setActiveTimestampIndex(idx);
+                      seekToTimestamp(ts.time);
+                    }}
                     _hover={
                       props.showMode ? {} : { textDecoration: 'underline' }
                     }

@@ -17,6 +17,13 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  user-select: none;
+}
+
+input,
+textarea,
+[contenteditable='true'] {
+  user-select: text;
 }
 
 #root {
