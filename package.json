@@ -1,6 +1,6 @@
 {
   "description": "A simple app for running dance shows",
-  "version": "2.9.0",
+  "version": "2.9.1",
   "homepage": "https://github.com/aaavang/showtime-electron#readme",
   "bugs": {
     "url": "https://github.com/aaavang/showtime-electron/issues"
