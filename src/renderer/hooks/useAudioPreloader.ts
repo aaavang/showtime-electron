@@ -3,14 +3,7 @@ import { Song } from '../database';
 import { AudioCacheContext } from '../providers/AudioCacheProvider';
 import { UserSettingsContext } from '../providers/UserSettingsProvider';
 import { useSongPathEncoder } from './useSongPathEncoder';
-
-let sharedAudioContext: AudioContext | null = null;
-function getAudioContext() {
-  if (!sharedAudioContext) {
-    sharedAudioContext = new window.AudioContext();
-  }
-  return sharedAudioContext;
-}
+import { getSharedAudioContext } from '../utils/audioContext';
 
 export function useAudioPreloader(songs: Song[]) {
   const [userSettings] = useContext(UserSettingsContext);
@@ -69,7 +62,8 @@ export function useAudioPreloader(songs: Song[]) {
 
           if (cancelled || !buffer) continue;
 
-          const audioBuffer = await getAudioContext().decodeAudioData(buffer);
+          const audioBuffer =
+            await getSharedAudioContext().decodeAudioData(buffer);
           if (!cancelled) {
             audioCache.set(src, audioBuffer);
           }

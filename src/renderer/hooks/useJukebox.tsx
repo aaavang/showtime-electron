@@ -25,15 +25,18 @@ import React, {
   MutableRefObject,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
 } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { Dance, DanceVariant, database, Song } from '../database';
 import { AudioPlayer } from '../pages/AudioPlayerTone';
+import { AudioCacheContext } from '../providers/AudioCacheProvider';
 import { UserSettingsContext } from '../providers/UserSettingsProvider';
 import { HydratedDanceVariant } from './SelectDanceModal';
 import { useSongPathEncoder } from './useSongPathEncoder';
+import { getSharedAudioContext } from '../utils/audioContext';
 
 const pulseAnimation = keyframes`
   0%, 50% { transform: scale(1); }
@@ -102,7 +105,50 @@ export const useJukebox = (): JukeboxReturnType => {
 function Jukebox({ state, setState, initialFocusRef }: JukeboxProps) {
   const [userSettings] = useContext(UserSettingsContext);
   const songPathEncoder = useSongPathEncoder();
+  const audioCache = useContext(AudioCacheContext);
   const isPlayingRef = useRef(false);
+
+  // Preload the next track in the playlist so transitions are gapless
+  useEffect(() => {
+    if (!state.playlist || state.currentTrackIndex === undefined)
+      return undefined;
+    const nextIndex = state.currentTrackIndex + 1;
+    if (nextIndex >= state.playlist.length) return undefined;
+
+    const nextSong = state.playlist[nextIndex].song;
+    const nextSrc = songPathEncoder(nextSong);
+    if (audioCache.get(nextSrc)) return undefined;
+
+    let cancelled = false;
+    const unsubscribe = window.electron.ipcRenderer.on(
+      'readAudioFile',
+      async (event: any) => {
+        if (event.src !== nextSrc || cancelled) return;
+        unsubscribe();
+        if (event.error || !event.buffer) return;
+        try {
+          const buf =
+            event.buffer instanceof ArrayBuffer
+              ? event.buffer
+              : new Uint8Array(event.buffer).buffer;
+          const audioBuffer =
+            await getSharedAudioContext().decodeAudioData(buf);
+          if (!cancelled) {
+            audioCache.set(nextSrc, audioBuffer);
+          }
+        } catch {
+          // Silently skip failed preloads
+        }
+      },
+    );
+    window.electron.ipcRenderer.sendMessage('readAudioFile', nextSrc);
+
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [state.playlist, state.currentTrackIndex, songPathEncoder, audioCache]);
+
   const timestamps = useLiveQuery(
     () =>
       state.variant?.id

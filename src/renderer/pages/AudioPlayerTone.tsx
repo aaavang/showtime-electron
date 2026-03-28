@@ -27,11 +27,12 @@ import {
 } from '@chakra-ui/react';
 import React, { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useInterval } from 'react-use';
-import { GrainPlayer } from 'tone';
+import { GrainPlayer, Player } from 'tone';
 import { database, VariantTimestamp } from '../database';
 import { AudioCacheContext } from '../providers/AudioCacheProvider';
 import { UserSettingsContext } from '../providers/UserSettingsProvider';
 import { JukeboxContext } from '../providers/JukeboxProvider';
+import { getSharedAudioContext } from '../utils/audioContext';
 
 export type AudioPlayerProps = {
   src: string;
@@ -45,7 +46,7 @@ export type AudioPlayerProps = {
 };
 
 type ToneState = {
-  player: GrainPlayer;
+  player: Player | GrainPlayer;
   duration: number;
 };
 
@@ -99,14 +100,15 @@ export function AudioPlayer(props: AudioPlayerProps) {
     );
   };
 
-  const buildPlayer = (audioBuffer: AudioBuffer): ToneState => {
-    const player = new GrainPlayer({
-      url: audioBuffer,
-      grainSize: 0.05,
-      overlap: 0.05,
-    });
+  const audioBufferRef = useRef<AudioBuffer | null>(null);
+  const playerTypeRef = useRef<'standard' | 'grain'>('standard');
+
+  const buildPlayer = (buffer: AudioBuffer, grain: boolean): ToneState => {
+    const player = grain
+      ? new GrainPlayer({ url: buffer, grainSize: 0.05, overlap: 0.05 })
+      : new Player({ url: buffer });
     player.toDestination();
-    return { player, duration: audioBuffer.duration };
+    return { player, duration: buffer.duration };
   };
 
   // Load audio — from cache or via IPC
@@ -117,10 +119,12 @@ export function AudioPlayer(props: AudioPlayerProps) {
     setIsPlaying(false);
     playbackRef.current = { startOffset: 0, startTime: 0 };
     fadeVolumeRef.current = 1;
+    playerTypeRef.current = 'standard';
 
     const cached = audioCache.get(props.src);
     if (cached && cached instanceof AudioBuffer) {
-      setTone(buildPlayer(cached));
+      audioBufferRef.current = cached;
+      setTone(buildPlayer(cached, false));
       return () => {
         if (toneRef.current) {
           toneRef.current.player.stop();
@@ -135,14 +139,15 @@ export function AudioPlayer(props: AudioPlayerProps) {
       unsubscribe?.();
       if (disposed) return;
       try {
-        const ctx = new window.AudioContext();
+        const ctx = getSharedAudioContext();
         // IPC may deliver a Uint8Array instead of ArrayBuffer on some platforms
         const buf =
           event.buffer instanceof ArrayBuffer
             ? event.buffer
             : new Uint8Array(event.buffer).buffer;
         const audioBuffer = await ctx.decodeAudioData(buf);
-        setTone(buildPlayer(audioBuffer));
+        audioBufferRef.current = audioBuffer;
+        setTone(buildPlayer(audioBuffer, false));
       } catch (error) {
         toast({
           title: 'Error loading audio',
@@ -191,18 +196,50 @@ export function AudioPlayer(props: AudioPlayerProps) {
     tone.player.volume.value = linearToDb(effectiveVolume);
   }, [volume, tone]);
 
-  // Rate change: GrainPlayer handles pitch preservation natively
+  // Rate change: update playbackRate without stop/start
   useEffect(() => {
     if (!tone) return;
-    tone.player.playbackRate = rate;
-
+    // Checkpoint position before rate change so tracking stays accurate
     if (isPlaying) {
-      const { startOffset } = playbackRef.current;
-      tone.player.stop();
-      playbackRef.current = { startOffset, startTime: nowSec() };
-      tone.player.start(undefined, startOffset);
+      const pos = getPosition();
+      playbackRef.current = { startOffset: pos, startTime: nowSec() };
     }
+    tone.player.playbackRate = rate;
   }, [rate, tone, isPlaying]);
+
+  // Swap between Player (1x / show mode) and GrainPlayer (non-1x, pitch-preserved)
+  const useGrain = !props.showMode && rate !== 1;
+  useEffect(() => {
+    const targetType = useGrain ? 'grain' : 'standard';
+    if (
+      !audioBufferRef.current ||
+      !tone ||
+      targetType === playerTypeRef.current
+    )
+      return;
+
+    playerTypeRef.current = targetType;
+    const pos = getPosition();
+    const wasPlaying = isPlayingRef.current;
+
+    tone.player.stop();
+    tone.player.dispose();
+
+    const newTone = buildPlayer(audioBufferRef.current, useGrain);
+    newTone.player.playbackRate = rateRef.current;
+    const ev = (volumeRef.current / 100) * fadeVolumeRef.current;
+    newTone.player.volume.value = linearToDb(ev);
+
+    if (wasPlaying) {
+      playbackRef.current = { startOffset: pos, startTime: nowSec() };
+      newTone.player.start(undefined, pos);
+    } else {
+      playbackRef.current.startOffset = pos;
+    }
+
+    setTone(newTone);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useGrain]);
 
   const checkpointPosition = () => {
     if (isPlayingRef.current) {
@@ -351,7 +388,7 @@ export function AudioPlayer(props: AudioPlayerProps) {
         setActiveTimestampIndex(idx);
       }
     }
-  }, 100);
+  }, 50);
 
   const formatSecondsToLabel = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
