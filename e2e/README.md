@@ -42,7 +42,7 @@ are retained on failure under `e2e/test-results/`.
 - **Page objects** in `support/pages/` encapsulate selectors so specs read as
   user flows and selector tweaks stay in one place.
 
-## Coverage (Phase 0 + Phase 1)
+## Coverage
 
 - `smoke.spec.ts` — app launches; every nav tab renders its page.
 - `songs.spec.ts` — import a directory of audio files; search/filter.
@@ -52,9 +52,23 @@ are retained on failure under `e2e/test-results/`.
 - `dance-details.spec.ts` — open a variant's Actions menu and route to the audio
   editor; **regression guard**: the menu item is clickable above the sticky
   header (guards the v2.9.2 Portal fix).
+- `playlists.spec.ts` — build a playlist, save it, load it back, and clear it.
+- `jukebox.spec.ts` — Play Default → play/pause and playback position advances;
+  next/previous navigation across a playlist.
+- `audio-editor.spec.ts` — editor loads with the track + controls; export a new
+  MP3 to disk via the (stubbed) save dialog.
+- `settings.spec.ts` — seed & purge the DB; the fine-grained-autoplay setting
+  persists; full database export → import round-trip.
 
-Later phases (playlists, jukebox playback, audio editor/timestamps, settings/data)
-are described in `docs/superpowers/specs/2026-07-12-e2e-testing-harness-design.md`.
+### Deferred (candidates for future specs)
+
+- Jukebox auto-advance at track end and the show-mode confirm guard (need
+  full-length playback or seeking — kept out to avoid flaky timing).
+- Audio-editor trim/fade/speed and timestamp add/jump/delete (need waveform
+  drag interaction and playback capture).
+
+See `docs/superpowers/specs/2026-07-12-e2e-testing-harness-design.md` for the
+full design.
 
 ## Troubleshooting
 

@@ -1,7 +1,7 @@
 # E2E Testing Harness — Design
 
 **Date:** 2026-07-12
-**Status:** Approved (design), pending implementation plan
+**Status:** Implemented — Phases 0–5 complete (16 specs green) on branch `e2e-testing`
 **Author:** aaavang + Claude
 
 ## Goal
