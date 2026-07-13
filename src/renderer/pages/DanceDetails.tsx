@@ -7,6 +7,7 @@ import {
   Menu,
   MenuItem,
   MenuList,
+  Portal,
   Table,
   TableContainer,
   Tbody,
@@ -196,41 +197,43 @@ export function DanceDetails() {
                         <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
                           Actions
                         </MenuButton>
-                        <MenuList>
-                          {!variant.defaultVariant && (
+                        <Portal>
+                          <MenuList>
+                            {!variant.defaultVariant && (
+                              <MenuItem
+                                icon={<MdStar />}
+                                onClick={() => makeVariantDefault(variant.id)}
+                              >
+                                Make Default
+                              </MenuItem>
+                            )}
                             <MenuItem
-                              icon={<MdStar />}
-                              onClick={() => makeVariantDefault(variant.id)}
+                              icon={<MdAppRegistration />}
+                              onClick={() => {
+                                setUpdatedVariant(variant);
+                                newVariantModal.onOpen();
+                              }}
                             >
-                              Make Default
+                              Edit...
                             </MenuItem>
-                          )}
-                          <MenuItem
-                            icon={<MdAppRegistration />}
-                            onClick={() => {
-                              setUpdatedVariant(variant);
-                              newVariantModal.onOpen();
-                            }}
-                          >
-                            Edit...
-                          </MenuItem>
-                          <MenuItem
-                            icon={<MdTune />}
-                            onClick={() =>
-                              navigate(
-                                `/audio-editor/${variant.songId}?variantId=${variant.id}`,
-                              )
-                            }
-                          >
-                            Edit Audio...
-                          </MenuItem>
-                          <MenuItem
-                            icon={<MdDelete />}
-                            onClick={() => deleteVariant(variant.id)}
-                          >
-                            Delete
-                          </MenuItem>
-                        </MenuList>
+                            <MenuItem
+                              icon={<MdTune />}
+                              onClick={() =>
+                                navigate(
+                                  `/audio-editor/${variant.songId}?variantId=${variant.id}`,
+                                )
+                              }
+                            >
+                              Edit Audio...
+                            </MenuItem>
+                            <MenuItem
+                              icon={<MdDelete />}
+                              onClick={() => deleteVariant(variant.id)}
+                            >
+                              Delete
+                            </MenuItem>
+                          </MenuList>
+                        </Portal>
                       </Menu>
                     </HStack>
                   </Td>

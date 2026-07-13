@@ -17,6 +17,7 @@ import {
   ModalFooter,
   ModalHeader,
   ModalOverlay,
+  Portal,
   Table,
   Tbody,
   Td,
@@ -376,19 +377,21 @@ export function Songs() {
               <MenuButton as={Button} rightIcon={<TriangleDownIcon />}>
                 Library Actions...
               </MenuButton>
-              <MenuList>
-                <MenuItem icon={<CiImport />} onClick={importDirectory}>
-                  Import Directory...
-                </MenuItem>
-                <Tooltip
-                  label="Make sure every song exists at the given location."
-                  openDelay={1000}
-                >
-                  <MenuItem icon={<GrValidate />} onClick={validateLibrary}>
-                    Validate Library
+              <Portal>
+                <MenuList>
+                  <MenuItem icon={<CiImport />} onClick={importDirectory}>
+                    Import Directory...
                   </MenuItem>
-                </Tooltip>
-              </MenuList>
+                  <Tooltip
+                    label="Make sure every song exists at the given location."
+                    openDelay={1000}
+                  >
+                    <MenuItem icon={<GrValidate />} onClick={validateLibrary}>
+                      Validate Library
+                    </MenuItem>
+                  </Tooltip>
+                </MenuList>
+              </Portal>
             </Menu>
           </Box>
         </HStack>

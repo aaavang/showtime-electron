@@ -43,7 +43,11 @@ export function Page({ children, name }: PageProps) {
         <DrawerOverlay />
         <DrawerContent>
           <DrawerBody>
-            <jukebox.Jukebox />
+            <jukebox.Jukebox
+              state={jukebox.jukeboxState}
+              setState={jukebox.setJukeboxState}
+              initialFocusRef={jukebox.initialFocusRef}
+            />
           </DrawerBody>
         </DrawerContent>
       </Drawer>

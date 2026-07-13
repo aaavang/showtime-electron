@@ -29,21 +29,16 @@ export type DanceModalProps = {
   disclosure: ReturnType<typeof useDisclosure>;
 };
 
-export type DanceModalHookProps = {
-  onSubmit: (data: Partial<NewDance>) => void;
-};
-
+// Returns a stable disclosure and the stable DanceModal component. The
+// component is passed the disclosure as a prop by the caller, so the modal
+// updates in place on re-render instead of remounting (which would reset the
+// title/song inputs and replay the open animation).
 export const useDanceModal = (): [
   ReturnType<typeof useDisclosure>,
-  (props: DanceModalHookProps) => React.ReactNode,
+  React.FC<DanceModalProps>,
 ] => {
   const newDanceModal = useDisclosure();
-  return [
-    newDanceModal,
-    ({ onSubmit }: DanceModalHookProps) => (
-      <DanceModal onSubmit={onSubmit} disclosure={newDanceModal} />
-    ),
-  ];
+  return [newDanceModal, DanceModal];
 };
 
 const DanceModal: React.FC<DanceModalProps> = ({ onSubmit, disclosure }) => {

@@ -9,6 +9,7 @@ import {
   Menu,
   MenuItem,
   MenuList,
+  Portal,
   Table,
   Tbody,
   Td,
@@ -585,62 +586,64 @@ export function PracticeTime() {
               <MenuButton as={Button} rightIcon={<ChevronDownIcon />}>
                 Playlist Actions...
               </MenuButton>
-              <MenuList>
-                {!showMode && (
-                  <MenuItem
-                    icon={<MdFileOpen />}
-                    onClick={selectPlaylistModalDisclosure.onOpen}
-                  >
-                    Load...
-                  </MenuItem>
-                )}
-                {!showMode && (
-                  <MenuItem icon={<MdSave />} onClick={quickSave}>
-                    Save
-                    {currentPlaylist ? ` "${currentPlaylist.title}"` : '...'}
-                  </MenuItem>
-                )}
-                {!showMode && (
-                  <MenuItem
-                    icon={<MdSave />}
-                    onClick={savePlaylistModalDisclosure.onOpen}
-                  >
-                    Save As...
-                  </MenuItem>
-                )}
-                {!showMode && (
-                  <MenuItem icon={<MdOutbound />} onClick={exportPlaylist}>
-                    Export...
-                  </MenuItem>
-                )}
-                {!showMode && (
-                  <MenuItem
-                    icon={<MdCleaningServices />}
-                    onClick={() => {
-                      setTracks([]);
-                      setCurrentPlaylist(null);
-                      setHasUnsavedChanges(false);
-                    }}
-                  >
-                    Clear
-                  </MenuItem>
-                )}
-                {!showMode && (
-                  <MenuItem
-                    icon={<MdCleaningServices />}
-                    onClick={() =>
-                      setTracks(
-                        tracks.map((t) => {
-                          t.autoplay = false;
-                          return t;
-                        }),
-                      )
-                    }
-                  >
-                    Clear Autoplay
-                  </MenuItem>
-                )}
-              </MenuList>
+              <Portal>
+                <MenuList>
+                  {!showMode && (
+                    <MenuItem
+                      icon={<MdFileOpen />}
+                      onClick={selectPlaylistModalDisclosure.onOpen}
+                    >
+                      Load...
+                    </MenuItem>
+                  )}
+                  {!showMode && (
+                    <MenuItem icon={<MdSave />} onClick={quickSave}>
+                      Save
+                      {currentPlaylist ? ` "${currentPlaylist.title}"` : '...'}
+                    </MenuItem>
+                  )}
+                  {!showMode && (
+                    <MenuItem
+                      icon={<MdSave />}
+                      onClick={savePlaylistModalDisclosure.onOpen}
+                    >
+                      Save As...
+                    </MenuItem>
+                  )}
+                  {!showMode && (
+                    <MenuItem icon={<MdOutbound />} onClick={exportPlaylist}>
+                      Export...
+                    </MenuItem>
+                  )}
+                  {!showMode && (
+                    <MenuItem
+                      icon={<MdCleaningServices />}
+                      onClick={() => {
+                        setTracks([]);
+                        setCurrentPlaylist(null);
+                        setHasUnsavedChanges(false);
+                      }}
+                    >
+                      Clear
+                    </MenuItem>
+                  )}
+                  {!showMode && (
+                    <MenuItem
+                      icon={<MdCleaningServices />}
+                      onClick={() =>
+                        setTracks(
+                          tracks.map((t) => {
+                            t.autoplay = false;
+                            return t;
+                          }),
+                        )
+                      }
+                    >
+                      Clear Autoplay
+                    </MenuItem>
+                  )}
+                </MenuList>
+              </Portal>
             </Menu>
             <Button
               colorScheme={showMode ? 'red' : 'purple'}

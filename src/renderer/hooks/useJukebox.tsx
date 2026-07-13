@@ -23,7 +23,6 @@ import {
 } from '@chakra-ui/react';
 import React, {
   MutableRefObject,
-  useCallback,
   useContext,
   useEffect,
   useRef,
@@ -73,31 +72,24 @@ type JukeboxProps = {
 export type JukeboxReturnType = {
   jukeboxState: JukeboxState;
   setJukeboxState: (state: JukeboxState) => void;
-  Jukebox: () => React.ReactNode;
+  Jukebox: React.FC<JukeboxProps>;
   initialFocusRef: MutableRefObject<any>;
 };
 
+// Exposes the stable Jukebox component and its state/handlers. The caller
+// renders <Jukebox> and passes state/setState as props, so the player updates
+// in place when the track or playlist changes instead of remounting (which
+// would tear down the Tone.js player mid-transition).
 export const useJukebox = (): JukeboxReturnType => {
   const [jukeboxState, setJukeboxState] = useState<JukeboxState>({
     showJukebox: false,
   });
   const ref = useRef<HTMLElement>();
 
-  const callback = useCallback(
-    () => (
-      <Jukebox
-        state={jukeboxState}
-        initialFocusRef={ref}
-        setState={setJukeboxState}
-      />
-    ),
-    [jukeboxState],
-  );
-
   return {
     jukeboxState,
     setJukeboxState,
-    Jukebox: callback,
+    Jukebox,
     initialFocusRef: ref,
   };
 };

@@ -316,7 +316,7 @@ export function Dances() {
         </Box>
         <TableControls table={table} />
       </VStack>
-      <DanceModal onSubmit={saveDance} />
+      <DanceModal onSubmit={saveDance} disclosure={newDanceModal} />
       <Modal isOpen={editDanceModal.isOpen} onClose={editDanceModal.onClose}>
         <ModalOverlay />
         <ModalContent>
