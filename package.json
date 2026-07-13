@@ -31,7 +31,11 @@
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
     "test": "jest",
     "version": "node -e \"const fs=require('fs'); const p=JSON.parse(fs.readFileSync('./release/app/package.json','utf8')); p.version=require('./package.json').version; fs.writeFileSync('./release/app/package.json', JSON.stringify(p,null,2)+'\\n');\" && git add release/app/package.json",
-    "prepare": "husky"
+    "prepare": "husky",
+    "e2e": "yarn build && playwright test --config e2e/playwright.config.ts",
+    "e2e:headed": "yarn build && playwright test --config e2e/playwright.config.ts --headed",
+    "e2e:ui": "playwright test --config e2e/playwright.config.ts --ui",
+    "e2e:debug": "playwright test --config e2e/playwright.config.ts --debug"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx,json,css,scss,md}": "prettier --write"
@@ -116,6 +120,7 @@
   },
   "devDependencies": {
     "@electron/rebuild": "^4.0.3",
+    "@playwright/test": "^1.61.1",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.11",
     "@svgr/webpack": "^8.1.0",
     "@teamsupercell/typings-for-css-modules-loader": "^2.5.2",
