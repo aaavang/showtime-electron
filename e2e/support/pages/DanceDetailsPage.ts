@@ -1,7 +1,11 @@
 import { type Page } from '@playwright/test';
 
 export class DanceDetailsPage {
-  constructor(private page: Page) {}
+  private page: Page;
+
+  constructor(page: Page) {
+    this.page = page;
+  }
 
   variantRow(title: string) {
     return this.page.getByRole('row', { name: new RegExp(title) });

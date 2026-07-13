@@ -13,6 +13,7 @@ import { ELECTRON_BIN, MAIN_JS } from '../support/paths';
 type Fixtures = { app: ElectronApplication; page: Page };
 
 export const test = base.extend<Fixtures>({
+  // eslint-disable-next-line no-empty-pattern -- Playwright fixture with no deps
   app: async ({}, use) => {
     const userDataDir = fs.mkdtempSync(path.join(os.tmpdir(), 'showtime-e2e-'));
     const app = await _electron.launch({

@@ -1,5 +1,5 @@
-import { test, expect } from '../fixtures/electron-app';
 import { type ElectronApplication, type Page } from '@playwright/test';
+import { test, expect } from '../fixtures/electron-app';
 import { AppNav } from '../support/pages/AppNav';
 import { SongsPage } from '../support/pages/SongsPage';
 import { DancesPage } from '../support/pages/DancesPage';

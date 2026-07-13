@@ -1,7 +1,11 @@
 import { type Page } from '@playwright/test';
 
 export class SongsPage {
-  constructor(private page: Page) {}
+  private page: Page;
+
+  constructor(page: Page) {
+    this.page = page;
+  }
 
   async importDirectory() {
     await this.page.getByRole('button', { name: /Library Actions/ }).click();

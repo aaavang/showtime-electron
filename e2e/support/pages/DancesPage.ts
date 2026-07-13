@@ -1,7 +1,11 @@
 import { type Page } from '@playwright/test';
 
 export class DancesPage {
-  constructor(private page: Page) {}
+  private page: Page;
+
+  constructor(page: Page) {
+    this.page = page;
+  }
 
   async newDance() {
     await this.page.getByRole('button', { name: '+ New Dance' }).click();

@@ -81,7 +81,8 @@
     },
     "testPathIgnorePatterns": [
       "release/app/dist",
-      ".erb/dll"
+      ".erb/dll",
+      "e2e"
     ],
     "transformIgnorePatterns": [
       "node_modules/(?!rehowl|tone)"
