@@ -10,11 +10,21 @@ export class PracticeTimePage {
   }
 
   async addFirstDance() {
+    await this.addDance();
+  }
+
+  // Add a dance to the playlist via the Select Dance modal. With `name`, the
+  // dance combobox is filtered to that dance first; otherwise the first option
+  // is used. The default variant auto-selects either way.
+  async addDance(name?: string) {
     await this.page.getByRole('button', { name: '+ Add Dance' }).click();
     const dialog = this.page.getByRole('dialog');
     await dialog.waitFor();
-    // Pick the first dance option; its default variant auto-selects.
-    await dialog.locator('input[id^="react-select"]').first().click();
+    const combobox = dialog.locator('input[id^="react-select"]').first();
+    await combobox.click();
+    if (name) {
+      await combobox.fill(name);
+    }
     await this.page
       .locator('[id^="react-select"][id*="option-0"]')
       .first()
